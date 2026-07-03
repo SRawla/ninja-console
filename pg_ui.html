@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ninja Console</title>
+<!-- Fonts: Hack for code/mono, Inter for UI. Loaded from CDN with graceful
+     fallback to system monospace/sans if offline (see --mono/--ui). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hack-font/3.003/web/hack.min.css">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('pgTheme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
+<style>
+  :root, html[data-theme="light"]{
+    /* Light theme (default) */
+    --bg:#f6f8fb; --panel:#ffffff; --panel2:#eef1f6; --panel3:#f2f5f9;
+    --line:#e3e8ef; --line2:#d3dae3;
+    --txt:#1a2230; --muted:#5a6675; --faint:#98a2b0;
+    --accent:#0d9488; --accent2:#0f766e; --accent-dim:#5bc7ba; --glow:rgba(13,148,136,.16);
+    --warn:#b7791f; --err:#dc2626; --ok:#16a34a; --sel:#dff3ef;
+    --shadow:0 10px 30px rgba(23,37,64,.12);
+    /* themeable component colors */
+    --primary-fg:#fff; --zebra:rgba(23,37,64,.022); --overlay:rgba(20,30,50,.35);
+    --dng-bg:#fdeceb; --dng-bd:#f2c4c1; --dng-fg:#b91c1c; --mdng-bg:var(--err); --mdng-fg:#fff;
+    --ro-fg:#15803d; --ro-bd:#bfe6cb; --ro-bg:#e9f7ee;
+    --cf-fg:#a15c07; --cf-bd:#ecd9ac; --cf-bg:#fbf3df;
+    --un-fg:#b91c1c; --un-bd:#f2c4c1; --un-bg:#fceceb;
+    --elev:0 4px 12px rgba(23,37,64,.05);
+    --mono:"Hack","JetBrains Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+    --ui:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --r:7px; --r-sm:5px; --r-lg:11px; --ctl:30px;
+  }
+  html[data-theme="dark"]{
+    /* Material-style dark theme */
+    --bg:#121212; --panel:#1e1e1e; --panel2:#2c2c2c; --panel3:#262626;
+    --line:#333333; --line2:#454545;
+    --txt:#e6e6e6; --muted:#a2a2a2; --faint:#6d6d6d;
+    --accent:#03dac6; --accent2:#00bfa9; --accent-dim:#1f6b66; --glow:rgba(3,218,198,.16);
+    --warn:#ffb74d; --err:#cf6679; --ok:#81c784; --sel:#12302d;
+    --shadow:0 12px 34px rgba(0,0,0,.6);
+    --primary-fg:#04140f; --zebra:rgba(255,255,255,.03); --overlay:rgba(0,0,0,.62);
+    --dng-bg:#3a1f24; --dng-bd:#5c343b; --dng-fg:#f2a8b2; --mdng-bg:#cf6679; --mdng-fg:#1a1210;
+    --ro-fg:#81c784; --ro-bd:#2e5c3a; --ro-bg:#16281b;
+    --cf-fg:#ffb74d; --cf-bd:#5c4a1c; --cf-bg:#2a2411;
+    --un-fg:#f2a8b2; --un-bd:#5c343b; --un-bg:#2a1519;
+    --elev:0 4px 14px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:var(--ui);font-size:13px;
+       display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--glow)}
+  *::-webkit-scrollbar{width:11px;height:11px}
+  *::-webkit-scrollbar-track{background:transparent}
+  *::-webkit-scrollbar-thumb{background:var(--line2);border-radius:7px;border:3px solid var(--bg)}
+  *::-webkit-scrollbar-thumb:hover{background:var(--accent-dim)}
+
+  button{font-family:var(--ui);font-size:12px;font-weight:500;color:var(--txt);background:var(--panel2);
+         border:1px solid var(--line);border-radius:var(--r);padding:0 12px;height:var(--ctl);cursor:pointer;
+         display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;line-height:1;
+         transition:background .12s ease,border-color .12s ease,color .12s ease}
+  button:hover{background:var(--panel3);border-color:var(--line2)}
+  button:active{transform:translateY(.5px)}
+  button:disabled{opacity:.42;cursor:default;transform:none}
+  button.primary{background:var(--accent);border-color:var(--accent);color:var(--primary-fg);font-weight:600;
+         box-shadow:0 1px 2px rgba(13,148,136,.24)}
+  button.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+  button.danger{background:var(--dng-bg);border-color:var(--dng-bd);color:var(--dng-fg)}
+  button.danger:hover{border-color:var(--err);filter:brightness(1.05)}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  input.box{font-family:var(--mono);font-size:12px;color:var(--txt);background:var(--panel3);
+       border:1px solid var(--line);border-radius:var(--r);padding:0 10px;height:var(--ctl);outline:none;
+       transition:border-color .12s ease,box-shadow .12s ease}
+  input.box:focus{border-color:var(--accent-dim);box-shadow:0 0 0 3px var(--glow)}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted);flex:none}
+  .dot.on{background:var(--ok);box-shadow:0 0 0 3px rgba(63,185,80,.16)}
+  .dot.bad{background:var(--err);box-shadow:0 0 0 3px rgba(244,112,103,.16)}
+  .dot.busy{background:var(--warn);box-shadow:0 0 0 3px rgba(227,179,65,.16);animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  header{display:flex;align-items:center;gap:12px;padding:0 16px;height:48px;flex:none;
+         border-bottom:1px solid var(--line);background:var(--panel)}
+  header .brand{font-family:var(--mono);font-weight:700;letter-spacing:.4px;font-size:14px}
+  header .brand b{color:var(--accent)}
+  header .ctx{color:var(--muted);font-family:var(--mono);font-size:11px}
+  header .spacer{flex:1}
+  kbd{font-family:var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);
+      padding:1px 5px;font-size:10.5px;color:var(--muted)}
+
+  /* Connection dashboard top bar (spec §5): always-visible profile/cluster/
+     status + actions, switchable any time. */
+  #connbar{display:flex;align-items:center;gap:10px;padding:9px 16px;min-height:50px;flex:none;
+       flex-wrap:wrap;row-gap:8px;border-bottom:1px solid var(--line);background:var(--panel)}
+  #connbar button{flex:0 0 auto}
+  .statuspill{max-width:340px}
+  .statuspill .cstatus{overflow:hidden;text-overflow:ellipsis}
+  #connbar .grp{display:flex;align-items:center;gap:7px}
+  #connbar label{color:var(--faint);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px}
+  #connbar select,#connbar input.box{font-family:var(--mono);font-size:12px;color:var(--txt);height:var(--ctl);
+       background:var(--panel3);border:1px solid var(--line);border-radius:var(--r);padding:0 9px;outline:none;
+       transition:border-color .12s ease,box-shadow .12s ease}
+  #connbar select:focus,#connbar input.box:focus{border-color:var(--accent-dim);box-shadow:0 0 0 3px var(--glow)}
+  #connbar select{min-width:158px} #connbar input#connRegion{width:120px}
+  #connbar .sep{width:1px;height:22px;background:var(--line);margin:0 2px}
+  #connbar .spacer{flex:1}
+  /* status chip: dot + label in a rounded pill */
+  .statuspill{display:inline-flex;align-items:center;gap:7px;height:var(--ctl);padding:0 12px;
+       background:var(--panel3);border:1px solid var(--line);border-radius:99px}
+  .statuspill .cstatus{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+  #connMsg{font-family:var(--mono);font-size:11px;color:var(--warn);max-width:340px;
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  main{flex:1;display:flex;min-height:0}
+  aside{width:328px;border-right:1px solid var(--line);background:var(--panel);
+        display:flex;flex-direction:column;min-height:0}
+  aside .head{padding:10px 14px;border-bottom:1px solid var(--line);color:var(--faint);
+        text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.8px;
+        display:flex;align-items:center;gap:6px}
+  aside .head .spacer{flex:1}
+  aside .head .filterbox{text-transform:none;letter-spacing:normal;width:120px;height:26px;padding:0 8px;font-size:11px}
+  aside .panel{display:flex;flex-direction:column;min-height:0;flex:1}
+
+  /* segmented control (Data Sources / App Services) */
+  .segwrap{display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--line);flex:none;background:var(--panel)}
+  .seg{flex:1;height:30px;padding:0;background:transparent;border:1px solid transparent;border-radius:var(--r);
+       color:var(--muted);font-size:12px;font-weight:500;cursor:pointer}
+  .seg:hover{background:var(--panel2);color:var(--txt)}
+  .seg.active{color:var(--accent);background:var(--panel3);border-color:var(--line)}
+
+  .profilebar{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--line);flex:none}
+  .profilebar select{flex:1;font-family:var(--mono);font-size:12px;color:var(--txt);background:var(--panel3);
+       border:1px solid var(--line);border-radius:var(--r);padding:0 8px;height:var(--ctl);min-width:0}
+  .profileactions{display:flex;gap:6px;padding:0 10px 10px;border-bottom:1px solid var(--line);flex:none}
+  .profileactions button{flex:1}
+
+  /* App Services: stacked card — name line, namespace, then all port controls
+     clubbed in ONE aligned row (.portctl) so they never wrap out of sync. */
+  .appsvc{border-bottom:1px solid var(--line)}
+  .appsvc .row{display:flex;align-items:flex-start;gap:9px;padding:9px 12px;min-width:0}
+  .appsvc .row:hover{background:var(--panel2)}
+  .appsvc .row>.dot{margin-top:4px}
+  .appsvc .body{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .appsvc .name{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--txt);
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .appsvc .sub{color:var(--muted);font-size:10.5px;font-family:var(--mono);overflow:hidden;
+       text-overflow:ellipsis;white-space:nowrap}
+  .appsvc .portctl{display:flex;align-items:center;gap:6px;margin-top:1px}
+  .appsvc .portctl .rport{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--panel3);
+       border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 8px;white-space:nowrap;
+       overflow:hidden;text-overflow:ellipsis;max-width:132px}
+  .appsvc select.portsel{font-family:var(--mono);font-size:11px;background:var(--panel3);height:26px;
+       border:1px solid var(--line);border-radius:var(--r-sm);color:var(--txt);padding:0 4px;max-width:132px}
+  .appsvc .arrow{flex:0 0 auto;color:var(--faint);font-size:12px}
+  .appsvc input.localport{flex:0 0 auto;width:66px;height:26px;font-family:var(--mono);font-size:11px;
+       background:var(--panel3);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--txt);
+       padding:0 6px;text-align:center}
+  .appsvc input.localport:focus{border-color:var(--accent-dim);box-shadow:0 0 0 3px var(--glow);outline:none}
+  .appsvc input.localport.badport{border-color:var(--err)}
+  .appsvc .act{flex:0 0 auto;height:26px;font-size:11px;padding:0 12px;border-radius:var(--r-sm);margin-left:auto}
+  .appsvc .errline{color:var(--err);font-size:10.5px;font-family:var(--mono);padding:0 12px 8px 33px;
+       white-space:normal;line-height:1.35}
+  .appsvc .fwdtag{color:var(--accent);font-size:9px;font-family:var(--mono);margin-left:6px;
+       border:1px solid var(--accent-dim);border-radius:var(--r-sm);padding:1px 4px}
+  aside .list{overflow-y:auto;overflow-x:hidden;flex:1;padding:4px 0;scrollbar-gutter:stable}
+  /* App Services panel: the catalog should absorb ALL space the profile list
+     isn't actively using — not split it 50/50 regardless of content. An empty
+     "no profile selected" placeholder must not cost the catalog 40% of the
+     sidebar. So: catalog is flex:1 (fills remainder); the profile list sizes
+     to its own content (flex:0 1 auto) up to a cap, then scrolls internally. */
+  #appCatalog{flex:1 1 0;min-height:80px}
+  /* Fixed px, NOT a percentage: max-height:% only resolves against an
+     ancestor with a DEFINED height. #profilePreviewWrap is a plain block
+     div with no set height, so a % cap here computed to "none" (unbounded)
+     and let this box balloon to fill leftover space on a tall monitor —
+     while starving/hiding the catalog below it on a shorter laptop screen.
+     A fixed px cap is unambiguous and identical on every screen size. */
+  #profilePreviewWrap{display:flex;flex-direction:column;flex:0 0 auto;min-height:0}
+  .profilelist{flex:0 1 auto;max-height:220px;min-height:44px}
+  /* Data Sources: stacked card — name line, then meta, then [mode] [Connect]. */
+  .src{border-bottom:1px solid var(--line);position:relative}
+  .src .row{display:flex;align-items:flex-start;gap:9px;padding:9px 12px;cursor:pointer;min-width:0}
+  .src .row:hover{background:var(--panel2)}
+  .src .row>.dot{margin-top:4px}
+  .src.sel .row{background:var(--sel)}
+  .src.sel{box-shadow:inset 3px 0 0 var(--accent)}
+  .src.connected::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ok)}
+  .src .body{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .src .name{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--txt);
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .src .sub{color:var(--muted);font-size:10.5px;font-family:var(--mono);overflow:hidden;
+       text-overflow:ellipsis;white-space:nowrap}
+  .src .actions{display:flex;align-items:center;gap:6px;margin-top:1px}
+  .src .act{height:26px;font-size:11px;padding:0 12px;border-radius:var(--r-sm);flex:0 0 auto}
+  .src .act.dis{color:var(--dng-fg);background:var(--dng-bg);border-color:var(--dng-bd)}
+  .src .err{color:var(--err);font-size:10.5px;font-family:var(--mono);line-height:1.35;
+       padding:0 12px 7px 33px;white-space:normal}
+  .src .fwd{color:var(--accent);font-size:9.5px;font-family:var(--mono);margin-left:6px;
+       border:1px solid var(--accent-dim);border-radius:var(--r-sm);padding:1px 4px}
+  /* engine badge (CQL/ES/MONGO) — postgres shows none */
+  .engbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.4px;
+       border:1px solid var(--accent-dim);color:var(--accent);border-radius:var(--r-sm);
+       padding:1px 5px;margin-left:6px;vertical-align:middle}
+  .engbadge.es{color:#c26a1a;border-color:#c26a1a} .engbadge.mongo{color:#3f9142;border-color:#3f9142}
+  .modebadge{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.4px;
+       border-radius:3px;padding:2px 6px;cursor:pointer;user-select:none;flex:0 0 auto;
+       white-space:nowrap;line-height:1.4}
+  .modebadge.readonly{color:var(--ro-fg);border:1px solid var(--ro-bd);background:var(--ro-bg)}
+  .modebadge.confirm{color:var(--cf-fg);border:1px solid var(--cf-bd);background:var(--cf-bg)}
+  .modebadge.unrestricted{color:var(--un-fg);border:1px solid var(--un-bd);background:var(--un-bg)}
+  .modebadge:hover{filter:brightness(1.3)}
+
+  .modal-overlay{position:fixed;inset:0;background:var(--overlay);display:none;
+       align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(2px)}
+  .modal-overlay.show{display:flex}
+  .modal{width:560px;max-width:92vw;background:var(--panel);border:1px solid var(--line2);
+       border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+  .modal .mhead{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);
+       background:var(--panel2)}
+  .modal .mhead b{color:var(--warn)}
+  .modal .mbody{padding:14px 16px}
+  .modal .mbody .lbl{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+  .modal .mbody pre{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:10px 12px;
+       font-family:var(--mono);font-size:12.5px;color:var(--txt);white-space:pre-wrap;word-break:break-word;
+       max-height:220px;overflow:auto;margin:0 0 12px}
+  .modal .mfoot{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+  .modal .mfoot button.danger{background:var(--mdng-bg);border-color:var(--mdng-bg);color:var(--mdng-fg)}
+  .modal .mfoot button.danger:hover{filter:brightness(.94)}
+
+  .tree{padding:2px 0 6px}
+  details.schema>summary{cursor:pointer;padding:3px 12px 3px 22px;color:var(--accent);
+       font-family:var(--mono);font-size:11.5px;list-style:none}
+  details.schema>summary::-webkit-details-marker{display:none}
+  details.schema>summary:before{content:"▸";display:inline-block;width:12px;color:var(--muted)}
+  details.schema[open]>summary:before{content:"▾"}
+  .tbl{display:flex;align-items:center;gap:6px;padding:2px 12px 2px 34px;font-family:var(--mono);
+       font-size:11.5px}
+  .tbl:hover{background:var(--panel2)}
+  .tbl .nm{flex:1;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tbl .go{opacity:0;height:auto;border:none;background:none;color:var(--accent);padding:0 4px;font-size:10.5px}
+  .tbl:hover .go{opacity:1}
+  .cols{padding-left:8px} .col{padding:1px 12px 1px 42px;color:var(--muted);font-size:10.5px;font-family:var(--mono)}
+  .col b{color:var(--txt);font-weight:500}
+  .empty{padding:28px 20px;color:var(--muted);font-family:var(--mono);font-size:12px;
+       text-align:center;line-height:1.65}
+
+  section.work{flex:1;display:flex;flex-direction:column;min-width:0}
+  .tabstrip{display:flex;align-items:center;gap:4px;padding:8px 16px 0;background:var(--panel);
+        border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{display:flex;align-items:center;gap:8px;padding:7px 13px;border:1px solid var(--line);
+       border-bottom:none;border-radius:var(--r) var(--r) 0 0;background:var(--panel2);color:var(--muted);
+       cursor:pointer;white-space:nowrap;font-family:var(--mono);font-size:12px}
+  .tab:hover{color:var(--txt)}
+  .tab.active{background:var(--bg);color:var(--txt);border-color:var(--accent-dim)}
+  .tab .x{font-size:13px;line-height:1;opacity:.6} .tab .x:hover{color:var(--err);opacity:1}
+  .tab.add{border:1px dashed var(--line2);color:var(--accent);background:none}
+  .tab.add:hover{background:var(--panel2)}
+
+  .toolbar{display:flex;align-items:center;gap:8px;padding:9px 16px;border-bottom:1px solid var(--line);
+       background:var(--panel)}
+  .toolbar .src-label{font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--panel3);
+       border:1px solid var(--line);border-radius:var(--r);padding:0 11px;height:var(--ctl);
+       display:inline-flex;align-items:center}
+  .toolbar .src-label.muted{color:var(--muted)}
+  .toolbar .spacer{flex:1}
+  textarea#editor{width:100%;height:180px;min-height:80px;resize:vertical;border:none;outline:none;
+       background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:13px;line-height:1.6;
+       padding:14px 16px;tab-size:2}
+  .statusbar{display:flex;align-items:center;gap:12px;padding:6px 16px;border-top:1px solid var(--line);
+       border-bottom:1px solid var(--line);background:var(--panel);font-family:var(--mono);
+       font-size:11.5px;color:var(--muted);min-height:28px}
+  .statusbar .err{color:var(--err)} .statusbar .ok{color:var(--ok)} .statusbar .warn{color:var(--warn)}
+
+  .resultpane{flex:1;display:flex;flex-direction:column;min-height:0}
+  .resbar{display:flex;align-items:center;gap:6px;padding:7px 16px;border-bottom:1px solid var(--line);
+       background:var(--panel);overflow-x:auto}
+  .restab{font-family:var(--mono);font-size:11px;padding:4px 11px;border:1px solid var(--line);
+       border-radius:99px;color:var(--muted);background:var(--panel2);cursor:pointer;white-space:nowrap}
+  .restab:hover{color:var(--txt)}
+  .restab.active{color:var(--accent);border-color:var(--accent-dim);background:var(--sel)}
+  .resbar .spacer{flex:1}
+  .resbar input.filter{width:200px;height:28px}
+  .grid-scroll{flex:1;overflow:auto;min-height:0}
+  /* document viewer (ES DSL / Mongo results) */
+  .docs{padding:10px 14px}
+  .doc{border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px;background:var(--panel);overflow:hidden}
+  .doc>summary{cursor:pointer;padding:8px 11px;font-family:var(--mono);font-size:11.5px;color:var(--accent);list-style:none}
+  .doc>summary::-webkit-details-marker{display:none}
+  .doc>summary:before{content:"▸";margin-right:7px;color:var(--muted)}
+  .doc[open]>summary:before{content:"▾"}
+  .doc pre{margin:0;padding:9px 12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11.5px;
+       line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--txt);max-height:380px;overflow:auto}
+  table.grid{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;
+       font-family:var(--mono);font-size:12px}
+  table.grid th{position:sticky;top:0;z-index:2;background:var(--panel2);color:var(--accent);text-align:left;
+       padding:8px 13px;border-bottom:1px solid var(--line2);border-right:1px solid var(--line);
+       font-weight:600;white-space:nowrap;cursor:pointer;user-select:none}
+  table.grid th:hover{background:var(--panel3)}
+  table.grid th .car{color:var(--muted);font-size:9px;margin-left:5px}
+  table.grid th.rownum,table.grid td.rownum{color:var(--faint);text-align:right;cursor:default;
+       position:sticky;left:0;z-index:1;background:var(--panel2);border-right:1px solid var(--line2)}
+  table.grid th.rownum{z-index:3}
+  table.grid td.rownum{background:var(--panel)}
+  table.grid td{padding:6px 13px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);
+       white-space:pre;max-width:520px;overflow:hidden;text-overflow:ellipsis;cursor:cell}
+  table.grid tr:nth-child(even) td{background:var(--zebra)}
+  table.grid tr:hover td{background:var(--sel)}
+  table.grid td.null{color:var(--faint);font-style:italic}
+  table.grid td.cellsel{outline:2px solid var(--accent);outline-offset:-2px;background:var(--sel)!important}
+
+  .history{position:absolute;right:0;top:0;bottom:0;width:430px;background:var(--panel);
+       border-left:1px solid var(--line);display:none;flex-direction:column;z-index:5}
+  .history.show{display:flex}
+  .history .head{display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .history .head .spacer{flex:1}
+  .hlist{overflow:auto;flex:1}
+  .hitem{padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+  .hitem:hover{background:var(--panel2)}
+  .hitem .m{color:var(--muted);font-size:10.5px;font-family:var(--mono);margin-bottom:3px}
+  .hitem pre{margin:0;font-family:var(--mono);font-size:11.5px;color:var(--txt);white-space:pre-wrap;
+       max-height:54px;overflow:hidden}
+  .relwrap{position:relative;flex:1;display:flex;flex-direction:column;min-height:0}
+
+  /* elevation polish: lift the top chrome + sidebar above content (both themes) */
+  #connbar{position:relative;z-index:3;box-shadow:var(--elev)}
+  aside{box-shadow:var(--elev)}
+  .tab.active{box-shadow:0 -1px 0 var(--accent) inset}
+  select{color:var(--txt);background:var(--panel3)}
+  .history{box-shadow:var(--shadow)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">🥷 Ninja<b>·</b>Console</div>
+  <span class="dot" id="conn"></span>
+  <span class="ctx" id="ctx">loading…</span>
+  <div class="spacer"></div>
+  <span class="ctx">run <kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
+  <button id="themeToggle" title="Toggle light / dark theme">🌙 Dark</button>
+</header>
+
+<div id="connbar">
+  <div class="grp"><label>profile</label>
+    <select id="connProfile"><option value="">— select —</option></select></div>
+  <div class="grp"><label>region</label>
+    <input class="box" id="connRegion" spellcheck="false" placeholder="region"></div>
+  <button id="connLogin">Login</button>
+  <span class="sep"></span>
+  <div class="grp"><label>cluster</label>
+    <select id="connCluster" disabled><option value="">—</option></select></div>
+  <span class="statuspill"><span class="dot" id="connDot"></span><span class="cstatus" id="connStatus">not connected</span></span>
+  <div class="spacer"></div>
+  <span id="connMsg"></span>
+  <button id="btnReload" title="Re-discover this cluster and overwrite its saved copy">↻ Reload</button>
+  <button id="btnLogout" class="danger" title="Disconnect all forwards and end the AWS session">Logout</button>
+</div>
+
+<main>
+  <aside>
+    <div class="segwrap" id="segwrap">
+      <button class="seg active" id="segDb">Data Sources</button>
+      <button class="seg" id="segApp">App Services</button>
+    </div>
+
+    <div id="sidebarEmpty" class="empty" style="display:none;padding:20px 16px;line-height:1.6">
+      Nothing discovered yet.<br>Connect a cluster above — its databases and app
+      services will appear here.
+    </div>
+
+    <div id="panelDb" class="panel">
+      <div class="list" id="sources"><div class="empty">loading…</div></div>
+    </div>
+
+    <div id="panelApp" class="panel" style="display:none">
+      <div class="profilebar">
+        <select id="profileSelect"><option value="">— saved profiles —</option></select>
+        <button id="profileSave" class="primary" title="Save currently-connected services as a named profile">💾 Save session</button>
+        <button id="profileDelete" title="Delete this saved profile">Delete</button>
+      </div>
+      <div id="profilePreviewWrap" style="display:none">
+        <div class="head" id="profilePreviewHead">profile</div>
+        <div class="profileactions">
+          <button class="primary" id="profileStartAll">▶ Start all</button>
+          <button id="profileStopAll">■ Stop all</button>
+        </div>
+        <div class="list profilelist" id="profilePreview"></div>
+      </div>
+      <div class="head"><span id="catalogCount">app services</span> <span class="spacer"></span>
+        <input class="box filterbox" id="appFilter" placeholder="filter…"></div>
+      <div class="list" id="appCatalog"><div class="empty">loading…</div></div>
+    </div>
+  </aside>
+
+  <section class="work">
+    <div class="tabstrip" id="tabstrip"></div>
+    <div class="toolbar">
+      <span class="src-label" id="srcLabel">no console</span>
+      <button class="primary" id="run" disabled>Run</button>
+      <div class="spacer"></div>
+      <button id="exportCsv">Export CSV</button>
+      <button id="copyTsv">Copy TSV</button>
+      <button id="histBtn">History</button>
+    </div>
+    <textarea id="editor" spellcheck="false" placeholder="connect a data source, then write SQL / CQL…"></textarea>
+    <div class="statusbar" id="status">ready</div>
+    <div class="relwrap">
+      <div class="resultpane">
+        <div class="resbar" id="resbar" style="display:none"></div>
+        <div class="grid-scroll" id="results"><div class="empty">no results yet</div></div>
+      </div>
+      <div class="history" id="history">
+        <div class="head"><b>Query history</b><div class="spacer"></div>
+          <button id="histClear">Clear</button><button id="histClose">✕</button></div>
+        <div class="hlist" id="histList"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="mhead"><b>⚠ Confirm write</b></div>
+    <div class="mbody">
+      <div class="lbl">target service</div>
+      <div style="font-family:var(--mono);font-size:13px;margin-bottom:12px" id="confirmSvc"></div>
+      <div class="lbl">statement</div>
+      <pre id="confirmSql"></pre>
+      <div style="color:var(--muted);font-size:11.5px">This source is in <b>Confirm writes</b> mode. Review the SQL above before running it.</div>
+    </div>
+    <div class="mfoot">
+      <button id="confirmCancel">Cancel</button>
+      <button class="danger" id="confirmRun">Run anyway</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let SERVICES=[], connected={}, schemaCache={}, consoles=[], activeId=null, seq=0, selectedSrc=null;
+let connecting={}, srcErrors={}, MODES={}, DEFAULT_MODE='confirm', pendingConfirm=null;
+
+async function api(path, opts){ const r = await fetch(path, opts); return r.json(); }
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const active = () => consoles.find(c=>c.id===activeId);
+const svcInfo = n => SERVICES.find(s=>s.service===n) || {};
+
+// ---- data sources ------------------------------------------------------ //
+async function loadServices(){
+  const d = await api('/api/services');
+  if(!d.ok){ $('#ctx').textContent='cannot read artifact'; $('#conn').className='dot bad'; return; }
+  SERVICES = d.services;
+  $('#ctx').textContent = `${d.context||'—'}  ·  ${SERVICES.length} services  ·  ${d.generated||''}`;
+  $('#conn').className='dot on';
+  const md = await api('/api/mode');
+  if(md.ok){ MODES = md.modes; DEFAULT_MODE = md.default; }
+  renderSources();
+  updateSidebar();
+}
+function modeOf(name){ return MODES[name] || DEFAULT_MODE; }
+function modeLabel(m){ return m==='readonly'?'RO':m==='unrestricted'?'UNSAFE':'confirm'; }
+async function cycleMode(name, ev){
+  ev.stopPropagation();
+  const order=['confirm','readonly','unrestricted'];
+  const next = order[(order.indexOf(modeOf(name))+1)%order.length];
+  MODES[name]=next; renderSources();
+  await api('/api/mode',{method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({service:name, mode:next})});
+}
+// Shorten a service name for display: drop redundant "postgres"/"postgresql"/
+// "pg" segments (e.g. adminservice-postgres -> adminservice, keycloak-postgresql
+// -metrics -> keycloak-metrics). The real name is kept for API calls + tooltip.
+// The service KEY may be "name@namespace" (disambiguated duplicate). baseName
+// returns just the name part for display; the full key is still used for identity.
+function baseName(svc){ return String(svc||'').split('@')[0]; }
+function displayName(name){
+  const parts = baseName(name).split('-').filter(p => !/^(postgres|postgresql|pg|pgsql)$/i.test(p));
+  return parts.join('-') || baseName(name);
+}
+// Engine badge for non-Postgres data sources (CQL / ES / MONGO).
+function engBadge(s){
+  const e = (s.engine || 'postgres');
+  if(e === 'postgres') return '';
+  const lbl = {cql:'CQL', es:'ES', mongo:'MONGO'}[e] || e.toUpperCase();
+  return ` <span class="engbadge ${e}">${lbl}</span>`;
+}
+function renderSources(){
+  const box = $('#sources'); box.innerHTML='';
+  if(!SERVICES.length){ box.innerHTML='<div class="empty">no services in artifact</div>'; return; }
+  SERVICES.forEach(s=>{
+    const isC = !!connected[s.service];
+    const busy = !!connecting[s.service];
+    const fwd = isC && connected[s.service].forward
+      ? `<span class="fwd" title="port-forward on :${connected[s.service].port}">⇅ :${connected[s.service].port}</span>` : '';
+    const err = srcErrors[s.service];
+    const mode = modeOf(s.service);
+    const dn = displayName(s.service);
+    // Build the meta line, omitting the namespace when it just repeats the name.
+    const ns = s.namespace || '';
+    const dup = ns && (ns.toLowerCase() === dn.toLowerCase() || ns.toLowerCase() === String(s.service).toLowerCase());
+    const sub = [ ...(ns && !dup ? [ns] : []), ':'+s.localPort, ...(s.database ? [s.database] : []) ].join(' · ');
+    const el = document.createElement('div');
+    el.className = 'src' + (isC?' connected':'') + (selectedSrc===s.service?' sel':'');
+    el.innerHTML = `
+      <div class="row">
+        <span class="dot ${busy?'busy':(isC?'on':'')}"></span>
+        <div class="body">
+          <div class="name" title="${escapeHtml(s.service)}">${escapeHtml(dn)}${engBadge(s)}${fwd}</div>
+          <div class="sub">${escapeHtml(sub)}</div>
+          <div class="actions">
+            <span class="modebadge ${mode}" title="write-safety mode — click to change">${modeLabel(mode)}</span>
+            <button class="act ${isC?'dis':''}" ${busy?'disabled':''}>${busy?'…':(isC?'Disconnect':'Connect')}</button>
+          </div>
+        </div>
+      </div>
+      ${err?`<div class="err" title="${escapeHtml(err.raw||err.msg)}">${escapeHtml(err.msg)} <span style="opacity:.7;text-decoration:underline">details</span></div>`:''}
+      <div class="tree"></div>`;
+    el.querySelector('.modebadge').onclick = ev => cycleMode(s.service, ev);
+    el.querySelector('.row').onclick = e=>{
+      if(e.target.classList.contains('act')) return;
+      selectedSrc = s.service; renderSources();
+    };
+    el.querySelector('.act').onclick = ()=> isC ? disconnect(s.service) : connect(s.service);
+    const errEl = el.querySelector('.err');
+    if(errEl) errEl.onclick = ev=>{ ev.stopPropagation();
+      setStatusGlobal(`<span class="err">${escapeHtml(srcErrors[s.service].raw)}</span>`); };
+    if(isC){ renderTree(el.querySelector('.tree'), s.service); }
+    box.appendChild(el);
+  });
+}
+function shortErr(e, port){
+  e = String(e||'');
+  if(/timeout|refused|Multiple connection attempts|could not connect/i.test(e))
+    return `can't reach :${port} — port-forward unavailable`;
+  if(/password|authentication|role .* does not exist/i.test(e))
+    return 'auth failed — check credentials in the artifact';
+  return e.replace(/\s+/g,' ').trim().slice(0,200);
+}
+
+async function connect(name){
+  connecting[name]=true; srcErrors[name]=null; renderSources();
+  setStatusGlobal(`connecting to ${escapeHtml(name)} (starting port-forward if needed)…`);
+  let d; try{ d = await api('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({service:name})}); }
+  catch(e){ d={ok:false,error:String(e)}; }
+  connecting[name]=false;
+  if(!d.ok){
+    const raw = String(d.error||'').replace(/\s+/g,' ').trim();
+    const msg = shortErr(d.error, svcInfo(name).localPort);
+    srcErrors[name]={msg, raw}; renderSources();
+    setStatusGlobal(`<span class="err">✕ ${escapeHtml(name)}: ${escapeHtml(raw.slice(0,320))}</span>`);
+    console.error('connect failed:', name, d.error);
+    return;
+  }
+  connected[name] = {version:d.version, forward:d.forward, port:d.port};
+  selectedSrc = name;
+  await loadSchema(name);
+  renderSources();
+  openConsole(name);
+  const remap = (d.port && d.declared && d.port!==d.declared) ? ` · local :${d.declared}→:${d.port}` : '';
+  const fwdNote = d.forward ? ' · forward started' : '';
+  setStatusGlobal(`<span class="ok">✓ connected</span> ${escapeHtml((d.version||'').split(' on ')[0])}${fwdNote}${remap}`);
+}
+async function disconnect(name){
+  await api('/api/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({service:name})});
+  delete connected[name]; delete schemaCache[name]; delete srcErrors[name];
+  renderSources(); applyActive();
+}
+
+// ---- schema tree (per source) ------------------------------------------ //
+async function loadSchema(name){
+  if(schemaCache[name]) return;
+  const d = await api('/api/tables?service='+encodeURIComponent(name));
+  schemaCache[name] = d.ok ? d.tables : [];
+}
+function renderTree(container, name){
+  container.innerHTML='';
+  const groups={}; (schemaCache[name]||[]).forEach(t=>{ (groups[t.schema] ||= []).push(t); });
+  const names = Object.keys(groups).sort();
+  if(!names.length){ container.innerHTML='<div class="col">no tables</div>'; return; }
+  names.forEach(sch=>{
+    const det=document.createElement('details'); det.className='schema';
+    if(names.length===1 || sch==='public') det.open=true;
+    det.innerHTML=`<summary>${escapeHtml(sch)} <span style="color:var(--muted)">(${groups[sch].length})</span></summary>`;
+    groups[sch].forEach(t=>{
+      const row=document.createElement('div'); row.className='tbl';
+      row.innerHTML=`<span class="nm" title="show columns">${escapeHtml(t.table)}</span><button class="go">select</button>`;
+      row.querySelector('.nm').onclick=()=>toggleCols(row,name,sch,t.table);
+      row.querySelector('.go').onclick=()=>runSelect(name,sch,t.table);
+      det.appendChild(row);
+    });
+    container.appendChild(det);
+  });
+}
+async function toggleCols(row,name,schema,table){
+  let box=row.nextElementSibling;
+  if(box && box.classList.contains('cols')){ box.remove(); return; }
+  const d=await api(`/api/columns?service=${encodeURIComponent(name)}&schema=${encodeURIComponent(schema)}&table=${encodeURIComponent(table)}`);
+  box=document.createElement('div'); box.className='cols';
+  (d.columns||[]).forEach(c=>{ const el=document.createElement('div'); el.className='col';
+    el.innerHTML=`<b>${escapeHtml(c.name)}</b> ${escapeHtml(c.type)}${c.nullable?'':' ·nn'}`; box.appendChild(el); });
+  row.after(box);
+}
+function runSelect(name,schema,table){
+  const c=openConsole(name);
+  const eng=(svcInfo(name).engine)||'postgres';
+  if(eng==='es')       c.sql=`SELECT * FROM "${table}" LIMIT 100`;                 // ES SQL: no schema qualifier
+  else if(eng==='mongo') c.sql=JSON.stringify({db:schema, find:table, limit:50}, null, 2);
+  else                 c.sql=`SELECT * FROM "${schema}"."${table}" LIMIT 100;`;    // postgres / cql
+  applyActive(); runQuery();
+}
+
+// ---- consoles (tabs) --------------------------------------------------- //
+function openConsole(service){
+  let c = consoles.find(x=>x.service===service);
+  if(!c){ c={id:++seq, service, sql:'', result:null, statusHtml:'ready'}; consoles.push(c); }
+  activeId=c.id; renderTabs(); applyActive(); return c;
+}
+function closeConsole(id){
+  const i=consoles.findIndex(c=>c.id===id); if(i<0) return;
+  consoles.splice(i,1);
+  if(activeId===id) activeId = consoles.length ? consoles[Math.max(0,i-1)].id : null;
+  renderTabs(); applyActive();
+}
+function renderTabs(){
+  const strip=$('#tabstrip'); strip.innerHTML='';
+  consoles.forEach(c=>{
+    const el=document.createElement('div'); el.className='tab'+(c.id===activeId?' active':'');
+    const dot = connected[c.service] ? '' : '<span class="dot bad" style="width:6px;height:6px"></span>';
+    el.innerHTML=`${dot}<span>${escapeHtml(baseName(c.service))}</span><span class="x">✕</span>`;
+    el.onclick=e=>{ if(e.target.classList.contains('x')) closeConsole(c.id);
+                    else { activeId=c.id; renderTabs(); applyActive(); } };
+    strip.appendChild(el);
+  });
+}
+function applyActive(){
+  const c=active();
+  $('#editor').value = c ? c.sql : '';
+  $('#srcLabel').textContent = c ? baseName(c.service) : 'no console';
+  $('#srcLabel').classList.toggle('muted', !c);
+  $('#run').disabled = !c;
+  $('#editor').disabled = !c;
+  $('#status').innerHTML = c ? (c.statusHtml||'ready') : 'connect a data source to begin';
+  renderResultPane();
+}
+
+// ---- write classification (client-side mirror, for instant readonly block) --- //
+const WRITE_RE = /\b(insert|update|delete|truncate|drop|alter|create|grant|revoke|merge|replace|lock|vacuum|reindex|call|copy|refresh)\b/i;
+function classifyClient(sql){ const s = sql.replace(/--[^\n]*|\/\*[\s\S]*?\*\//g,' '); return WRITE_RE.test(s) ? 'write' : 'read'; }
+
+function setStatus(html){ const c=active(); if(c){ c.statusHtml=html; } $('#status').innerHTML=html; }
+function setStatusGlobal(html){ $('#status').innerHTML=html; }
+
+async function runQuery(){
+  const c=active(); if(!c) return;
+  if(!connected[c.service]){ setStatus(`<span class="warn">not connected — click Connect on ${escapeHtml(c.service)}</span>`); return; }
+  const sql=$('#editor').value.trim(); c.sql=sql;
+  if(!sql){ setStatus('empty query'); return; }
+
+  const mode = modeOf(c.service);
+  if(mode==='readonly' && classifyClient(sql)==='write'){
+    setStatus(`<span class="err">✕ blocked — ${escapeHtml(c.service)} is in Read-only mode</span>`);
+    return; // no network call at all
+  }
+  await sendQuery(c, sql, false);
+}
+
+async function sendQuery(c, sql, confirmed){
+  setStatus('running…'); $('#run').disabled=true;
+  let d; try{ d=await api('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({service:c.service, sql, confirmed})}); }
+  catch(e){ d={ok:false,error:String(e)}; }
+  $('#run').disabled=false;
+
+  if(!d.ok && d.needsConfirm){ openConfirmModal(c, sql); return; }
+  if(!d.ok && d.blocked){ setStatus(`<span class="err">✕ ${escapeHtml(d.error)}</span>`); return; }
+  if(!d.ok){ setStatus(`<span class="err">✕ ${escapeHtml(d.error)}</span>`); c.result=null; renderResultPane(); return; }
+
+  pushHistory(c.service, sql);
+  if(d.result_kind==='docs'){                 // document engines (ES DSL / Mongo)
+    c.result = { kind:'docs', docs:d.docs||[], elapsed:d.elapsed_ms };
+    setStatus(`<span class="ok">✓</span> ${(d.docs||[]).length} document(s) · ${d.elapsed_ms} ms`);
+    renderResultPane(); return;
+  }
+  c.result = { kind:'rows', sets:d.sets, elapsed:d.elapsed_ms, activeSet:lastGridIndex(d.sets),
+               views:d.sets.map(()=>({sort:null, filter:'', sel:null})) };
+  const s = d.sets[c.result.activeSet];
+  const stmts = d.sets.length>1 ? `${d.sets.length} statements · ` : '';
+  if(s.columns){ const tr=s.truncated?` <span class="warn">(capped ${s.rowcount})</span>`:'';
+    setStatus(`<span class="ok">✓</span> ${stmts}${s.rowcount} rows · ${d.elapsed_ms} ms${tr}`); }
+  else setStatus(`<span class="ok">✓</span> ${stmts}${escapeHtml(s.status||'done')} · ${d.elapsed_ms} ms`);
+  renderResultPane();
+}
+
+function openConfirmModal(c, sql){
+  pendingConfirm = {service:c.service, sql};
+  $('#confirmSvc').textContent = c.service;
+  $('#confirmSql').textContent = sql;
+  $('#confirmModal').classList.add('show');
+}
+function closeConfirmModal(){ pendingConfirm=null; $('#confirmModal').classList.remove('show'); }
+$('#confirmCancel').onclick = ()=>{ setStatus('<span class="warn">cancelled</span>'); closeConfirmModal(); };
+$('#confirmRun').onclick = async ()=>{
+  if(!pendingConfirm) return;
+  const {service, sql} = pendingConfirm; closeConfirmModal();
+  const c = consoles.find(x=>x.service===service) || active();
+  if(c) await sendQuery(c, sql, true);
+};
+$('#confirmModal').addEventListener('click', e=>{ if(e.target.id==='confirmModal') closeConfirmModal(); });
+function lastGridIndex(sets){ for(let i=sets.length-1;i>=0;i--) if(sets[i].columns) return i; return sets.length-1; }
+
+// ---- result pane (DataGrip-ish) ---------------------------------------- //
+function renderResultPane(){
+  const c=active(), bar=$('#resbar'), box=$('#results');
+  if(!c || !c.result){ bar.style.display='none'; box.innerHTML='<div class="empty">no results yet</div>'; return; }
+  if(c.result.kind==='docs'){ bar.style.display='none'; box.innerHTML=renderDocs(c.result.docs); return; }
+  const sets=c.result.sets;
+  // sub-tabs when multiple result sets
+  if(sets.length>1){
+    bar.style.display='flex'; bar.innerHTML='';
+    sets.forEach((s,i)=>{
+      const t=document.createElement('div'); t.className='restab'+(i===c.result.activeSet?' active':'');
+      t.textContent = s.columns ? `Result ${i+1} · ${s.rowcount}` : (s.status||`stmt ${i+1}`);
+      t.onclick=()=>{ c.result.activeSet=i; renderResultPane(); };
+      bar.appendChild(t);
+    });
+    appendFilter(bar);
+  } else { bar.style.display='flex'; bar.innerHTML=''; appendFilter(bar); }
+
+  const set=sets[c.result.activeSet], view=c.result.views[c.result.activeSet];
+  if(!set.columns){ box.innerHTML=`<div class="empty">${escapeHtml(set.status||'done')}</div>`; return; }
+  box.innerHTML = buildGrid(set, view);
+  wireGrid(box, set, view);
+}
+// document result viewer (ES DSL / Mongo) — collapsible pretty-printed JSON
+function docSummary(d){
+  const id = (d._id!=null) ? ('#'+d._id) : '';
+  const keys = Object.keys(d).filter(k=>!k.startsWith('_')).slice(0,5).join(', ');
+  return (id+' '+keys).trim() || 'document';
+}
+function renderDocs(docs){
+  if(!docs || !docs.length) return '<div class="empty">no documents</div>';
+  return '<div class="docs">' + docs.map((d,i)=>{
+    const js = escapeHtml(JSON.stringify(d, null, 2));
+    return `<details class="doc"${i<15?' open':''}><summary>${escapeHtml(docSummary(d))}</summary><pre>${js}</pre></details>`;
+  }).join('') + '</div>';
+}
+function appendFilter(bar){
+  const c=active(), view=c.result.views[c.result.activeSet];
+  const sp=document.createElement('div'); sp.className='spacer'; bar.appendChild(sp);
+  const inp=document.createElement('input'); inp.className='box filter'; inp.placeholder='filter rows…';
+  inp.value=view?view.filter:''; 
+  inp.oninput=()=>{ view.filter=inp.value; const box=$('#results'); const set=c.result.sets[c.result.activeSet];
+    box.innerHTML=buildGrid(set,view); wireGrid(box,set,view); };
+  bar.appendChild(inp);
+}
+function viewRows(set, view){
+  let idx = set.rows.map((r,i)=>i);
+  if(view.filter){ const f=view.filter.toLowerCase();
+    idx = idx.filter(i=> set.rows[i].some(v=> v!==null && String(v).toLowerCase().includes(f))); }
+  if(view.sort){ const {col,dir}=view.sort;
+    idx.sort((a,b)=>{ let x=set.rows[a][col], y=set.rows[b][col];
+      if(x===null&&y===null) return 0; if(x===null) return 1; if(y===null) return -1;
+      const nx=Number(x), ny=Number(y);
+      if(!isNaN(nx)&&!isNaN(ny)) return (nx-ny)*dir;
+      return String(x).localeCompare(String(y))*dir; }); }
+  return idx;
+}
+function buildGrid(set, view){
+  const idx = viewRows(set, view);
+  let h='<table class="grid"><thead><tr><th class="rownum">#</th>';
+  set.columns.forEach((col,ci)=>{
+    let car=''; if(view.sort && view.sort.col===ci) car = view.sort.dir>0?'▲':'▼';
+    h+=`<th data-c="${ci}">${escapeHtml(col)}<span class="car">${car}</span></th>`;
+  });
+  h+='</tr></thead><tbody>';
+  idx.forEach((ri,n)=>{
+    h+=`<tr><td class="rownum">${n+1}</td>`;
+    set.rows[ri].forEach((v,ci)=>{
+      if(v===null) h+='<td class="null" data-r="'+ri+'" data-c="'+ci+'">NULL</td>';
+      else { const s=escapeHtml(String(v)); h+=`<td data-r="${ri}" data-c="${ci}" title="${s}">${s}</td>`; }
+    });
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function wireGrid(box, set, view){
+  box.querySelectorAll('th[data-c]').forEach(th=>{
+    th.onclick=()=>{ const ci=+th.dataset.c;
+      if(!view.sort || view.sort.col!==ci) view.sort={col:ci,dir:1};
+      else if(view.sort.dir===1) view.sort.dir=-1;
+      else view.sort=null;
+      box.innerHTML=buildGrid(set,view); wireGrid(box,set,view); };
+  });
+  box.querySelectorAll('td[data-c]').forEach(td=>{
+    td.onclick=()=>{ box.querySelectorAll('td.cellsel').forEach(x=>x.classList.remove('cellsel'));
+      td.classList.add('cellsel'); view.sel={r:+td.dataset.r,c:+td.dataset.c}; };
+  });
+}
+
+// ---- export / copy ----------------------------------------------------- //
+function currentSet(){ const c=active(); if(!c||!c.result) return null;
+  const s=c.result.sets[c.result.activeSet]; return s.columns? {set:s, view:c.result.views[c.result.activeSet]} : null; }
+function asMatrix(){ const cur=currentSet(); if(!cur) return null;
+  const idx=viewRows(cur.set,cur.view);
+  return {cols:cur.set.columns, rows:idx.map(i=>cur.set.rows[i])}; }
+function exportCsv(){
+  const m=asMatrix(); if(!m){ setStatus('<span class="warn">nothing to export</span>'); return; }
+  const esc=v=> v===null?'':(/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':String(v));
+  const lines=[m.cols.map(esc).join(',')]; m.rows.forEach(r=>lines.push(r.map(esc).join(',')));
+  download(lines.join('\n'),'text/csv','csv');
+}
+function copyTsv(){
+  const m=asMatrix(); if(!m){ setStatus('<span class="warn">nothing to copy</span>'); return; }
+  const esc=v=> v===null?'':String(v).replace(/\t/g,' ').replace(/\n/g,' ');
+  const txt=[m.cols.join('\t')].concat(m.rows.map(r=>r.map(esc).join('\t'))).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>setStatus('<span class="ok">copied TSV</span>'));
+}
+function download(text,type,ext){ const b=new Blob([text],{type}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(b); a.download=`${active().service}_${Date.now()}.${ext}`; a.click(); URL.revokeObjectURL(a.href); }
+
+// ---- history ----------------------------------------------------------- //
+const HKEY='pgconsole_history';
+function getHistory(){ try{ return JSON.parse(localStorage.getItem(HKEY)||'[]'); }catch{ return []; } }
+function pushHistory(service,sql){ const h=getHistory();
+  if(h.length && h[0].sql===sql && h[0].service===service) return;
+  h.unshift({ts:Date.now(),service,sql}); localStorage.setItem(HKEY,JSON.stringify(h.slice(0,200)));
+  if($('#history').classList.contains('show')) renderHistory(); }
+function renderHistory(){ const list=$('#histList'), h=getHistory();
+  if(!h.length){ list.innerHTML='<div class="empty">no history yet</div>'; return; }
+  list.innerHTML=''; h.forEach(it=>{ const el=document.createElement('div'); el.className='hitem';
+    el.innerHTML=`<div class="m">${new Date(it.ts).toLocaleString()} · ${escapeHtml(it.service)}</div><pre>${escapeHtml(it.sql)}</pre>`;
+    el.onclick=()=>{ if(connected[it.service]) openConsole(it.service); else { selectedSrc=it.service; renderSources(); }
+      const c=active(); if(c){ c.sql=it.sql; applyActive(); } $('#history').classList.remove('show'); };
+    list.appendChild(el); }); }
+
+// ========================================================================= //
+// App Services panel — generic port-forwarding to a microservice's
+// dependencies.
+//
+// Model (locked in after user feedback): connect ad-hoc, exactly like Data
+// Sources — pick a service, type the exact local port, click Connect. A
+// "profile" is NOT a prerequisite for connecting; it is a pure convenience
+// on top: "Save session" snapshots whichever services are CURRENTLY
+// connected (with whatever local ports you used) under a name. Selecting a
+// saved profile later shows a preview + "Start all" to reconnect that same
+// set — it never auto-connects on selection, and it never gates ad-hoc use.
+// ========================================================================= //
+let APP_SERVICES = [], PROFILES = {}, currentProfile = null, appStatus = {}, appFilterText = '';
+let localPortChoice = {};   // service -> last-typed local port (in-memory only until Connect/Save)
+let remotePortChoice = {};  // service -> currently-selected remote port
+
+function switchPanel(which){
+  $('#segDb').classList.toggle('active', which==='db');
+  $('#segApp').classList.toggle('active', which==='app');
+  $('#panelDb').style.display = which==='db' ? '' : 'none';
+  $('#panelApp').style.display = which==='app' ? '' : 'none';
+}
+
+// Hide the whole Data Sources / App Services area when nothing is discovered —
+// there's nothing to connect to until a cluster is loaded.
+function updateSidebar(){
+  const has = (SERVICES && SERVICES.length) || (APP_SERVICES && APP_SERVICES.length);
+  $('#segwrap').style.display = has ? '' : 'none';
+  $('#sidebarEmpty').style.display = has ? 'none' : '';
+  if(!has){ $('#panelDb').style.display = 'none'; $('#panelApp').style.display = 'none'; }
+  else { switchPanel($('#segDb').classList.contains('active') ? 'db' : 'app'); }
+}
+
+async function loadAppServices(){
+  const d = await api('/api/appservices');
+  if(d.ok) APP_SERVICES = d.services;
+  renderAppCatalog();
+  updateSidebar();
+}
+async function loadProfiles(){
+  const d = await api('/api/profiles');
+  if(d.ok) PROFILES = d.profiles;
+  renderProfileSelect();
+  renderProfilePreview();
+}
+
+function renderProfileSelect(){
+  const sel = $('#profileSelect');
+  const names = Object.keys(PROFILES).sort();
+  sel.innerHTML = '<option value="">— saved profiles —</option>' +
+    names.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)} (${(PROFILES[n]||[]).length})</option>`).join('');
+  if(currentProfile && names.includes(currentProfile)) sel.value = currentProfile;
+  else currentProfile = null;
+}
+
+// ---- catalog: the primary, always-usable list (mirrors Data Sources) --- //
+function renderAppCatalog(){
+  const box = $('#appCatalog'); box.innerHTML='';
+  const f = appFilterText.toLowerCase();
+  let list = APP_SERVICES.filter(s => !f ||
+    s.service.toLowerCase().includes(f) || (s.namespace||'').toLowerCase().includes(f));
+  // Connected services sort first — otherwise they're buried alphabetically
+  // among 50+ entries with no way to see "what's live right now" at a glance.
+  list = list.slice().sort((a, b) => {
+    const ac = (appStatus[a.service]||{}).connected ? 0 : 1;
+    const bc = (appStatus[b.service]||{}).connected ? 0 : 1;
+    if (ac !== bc) return ac - bc;
+    return a.service.localeCompare(b.service);
+  });
+  $('#catalogCount').textContent = f
+    ? `app services · ${list.length} of ${APP_SERVICES.length}`
+    : `app services · ${APP_SERVICES.length}`;
+  if(!list.length){ box.innerHTML = `<div class="empty">${APP_SERVICES.length?'no matches':'no app services in artifact — regenerate with -IncludeAppServices'}</div>`; return; }
+  list.forEach(s => box.appendChild(buildServiceCard(s)));
+}
+
+// One card renderer used for BOTH the catalog and the profile preview —
+// they're the same underlying action (connect a service to a local port),
+// just with a different source for the initial remote/local port values.
+function buildServiceCard(s, presetLocalPort){
+  const st = appStatus[s.service] || {};
+  const ports = s.ports || [{name:'?', port: st.remotePort || 0}];
+  if(remotePortChoice[s.service] === undefined) remotePortChoice[s.service] = ports[0].port;
+  if(presetLocalPort !== undefined) localPortChoice[s.service] = presetLocalPort;
+  else if(localPortChoice[s.service] === undefined) localPortChoice[s.service] = remotePortChoice[s.service];
+
+  const el = document.createElement('div'); el.className='appsvc';
+  const opts = ports.map(p=>`<option value="${p.port}" ${p.port===remotePortChoice[s.service]?'selected':''}>${escapeHtml(p.name)}:${p.port}</option>`).join('');
+  const fwdTag = st.connected ? `<span class="fwdtag">:${st.port}</span>` : '';
+  const remote = ports.length>1
+    ? `<select class="portsel">${opts}</select>`
+    : `<span class="rport" title="remote port">${escapeHtml(ports[0].name)}:${ports[0].port}</span>`;
+
+  el.innerHTML = `
+    <div class="row">
+      <span class="dot ${st.connecting?'busy':(st.connected?'on':(st.error?'bad':''))}"></span>
+      <div class="body">
+        <div class="name" title="${escapeHtml(s.service)}">${escapeHtml(s.svcName || baseName(s.service))}${fwdTag}</div>
+        <div class="sub">${escapeHtml(s.namespace||'')}</div>
+        <div class="portctl">
+          ${remote}
+          <span class="arrow">→</span>
+          <input type="text" class="localport" value="${localPortChoice[s.service]}" title="local port — you choose this, it is never auto-changed">
+          <button class="act">${st.connecting?'…':(st.connected?'Disconnect':'Connect')}</button>
+        </div>
+      </div>
+    </div>
+    ${st.error ? `<div class="errline">${escapeHtml(st.error)}</div>` : ''}`;
+
+  const portSel = el.querySelector('.portsel');
+  if(portSel) portSel.onchange = ()=>{ remotePortChoice[s.service] = +portSel.value; };
+
+  const lpInput = el.querySelector('.localport');
+  lpInput.oninput = ()=>{ localPortChoice[s.service] = lpInput.value.replace(/[^0-9]/g,''); lpInput.value = localPortChoice[s.service]; };
+
+  el.querySelector('.act').onclick = async ()=>{
+    if(st.connected){ await disconnectAppEntry(s.service); return; }
+    const lp = parseInt(localPortChoice[s.service], 10);
+    if(!lp || lp < 1 || lp > 65535){ lpInput.classList.add('badport'); lpInput.focus(); return; }
+    await connectAppEntry({service:s.service, namespace:s.namespace, remotePort:remotePortChoice[s.service], localPort:lp});
+  };
+  return el;
+}
+
+// ---- profile preview: read-only-ish list of a SAVED snapshot ----------- //
+function renderProfilePreview(){
+  const wrap = $('#profilePreviewWrap');
+  if(!currentProfile){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+  let entries = PROFILES[currentProfile] || [];
+  $('#profilePreviewHead').textContent = `profile: ${currentProfile} · ${entries.length}`;
+  const box = $('#profilePreview'); box.innerHTML='';
+  if(!entries.length){ box.innerHTML='<div class="empty">empty profile</div>'; return; }
+  // Same connected-first ordering as the catalog — after "Start all" partially
+  // fails, the successes and the red/pending entries separate cleanly.
+  entries = entries.slice().sort((a, b) => {
+    const ac = (appStatus[a.service]||{}).connected ? 0 : 1;
+    const bc = (appStatus[b.service]||{}).connected ? 0 : 1;
+    if (ac !== bc) return ac - bc;
+    return a.service.localeCompare(b.service);
+  });
+  entries.forEach(e=>{
+    // Present as a service-shaped object so buildServiceCard can render it identically —
+    // preset the remote/local port to whatever was saved, not the catalog default.
+    remotePortChoice[e.service] = e.remotePort;
+    const fake = {service: e.service, namespace: e.namespace, ports: [{name:'saved', port: e.remotePort}]};
+    box.appendChild(buildServiceCard(fake, e.localPort));
+  });
+}
+
+// ---- connect / disconnect (single source of truth for BOTH lists) ------ //
+async function connectAppEntry(e){
+  appStatus[e.service] = {connecting:true, namespace:e.namespace, remotePort:e.remotePort};
+  renderAppCatalog(); renderProfilePreview();
+  let d; try{ d = await api('/api/app/connect',{method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({service:e.service, namespace:e.namespace, remotePort:e.remotePort, localPort:e.localPort})}); }
+  catch(err){ d={ok:false, error:String(err)}; }
+  if(d.ok) appStatus[e.service] = {connected:true, port:d.port, namespace:e.namespace, remotePort:e.remotePort};
+  else appStatus[e.service] = {connected:false, error:d.error, namespace:e.namespace, remotePort:e.remotePort};
+  localPortChoice[e.service] = e.localPort;
+  renderAppCatalog(); renderProfilePreview();
+  return d.ok;
+}
+async function disconnectAppEntry(service){
+  const prev = appStatus[service] || {};
+  await api('/api/app/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({service})});
+  appStatus[service] = {connected:false, namespace:prev.namespace, remotePort:prev.remotePort};
+  renderAppCatalog(); renderProfilePreview();
+}
+
+// ---- profiles: pure snapshot/reload of ad-hoc connection state --------- //
+async function saveSessionAsProfile(){
+  const connectedEntries = Object.entries(appStatus)
+    .filter(([svc,st])=>st.connected)
+    .map(([svc,st])=>({service:svc, namespace:st.namespace, remotePort:st.remotePort, localPort:st.port}));
+  if(!connectedEntries.length){
+    setStatusGlobal('<span class="warn">Connect at least one app service first, then save the session as a profile.</span>');
+    return;
+  }
+  const name = prompt(`Save the ${connectedEntries.length} currently-connected service(s) as a profile:`, currentProfile || '');
+  if(!name || !name.trim()) return;
+  currentProfile = name.trim();
+  await api('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({action:'save', name:currentProfile, entries:connectedEntries})});
+  await loadProfiles();
+  setStatusGlobal(`<span class="ok">Saved profile "${escapeHtml(currentProfile)}" (${connectedEntries.length} services)</span>`);
+}
+
+async function startAllProfile(){
+  if(!currentProfile) return;
+  const entries = PROFILES[currentProfile]||[];
+  let ok=0, fail=0;
+  for(const e of entries){ (await connectAppEntry(e)) ? ok++ : fail++; }
+  setStatusGlobal(`<span class="${fail?'warn':'ok'}">Profile "${escapeHtml(currentProfile)}": ${ok} connected${fail?`, ${fail} failed — see red entries`:''}</span>`);
+}
+async function stopAllProfile(){
+  if(!currentProfile) return;
+  const entries = PROFILES[currentProfile]||[];
+  for(const e of entries){ await disconnectAppEntry(e.service); }
+  setStatusGlobal(`Profile "${escapeHtml(currentProfile)}" stopped`);
+}
+
+// ---- App Services wiring ------------------------------------------------ //
+$('#segDb').onclick = ()=> switchPanel('db');
+$('#segApp').onclick = ()=> switchPanel('app');
+$('#appFilter').oninput = e=>{ appFilterText = e.target.value; renderAppCatalog(); };
+$('#profileSelect').onchange = e=>{ currentProfile = e.target.value || null; renderProfilePreview(); };
+$('#profileSave').onclick = saveSessionAsProfile;
+$('#profileDelete').onclick = async ()=>{
+  if(!currentProfile) return;
+  if(!confirm(`Delete profile "${currentProfile}"? This does not disconnect any active forwards.`)) return;
+  await api('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({action:'delete', name:currentProfile})});
+  currentProfile = null;
+  await loadProfiles();
+};
+$('#profileStartAll').onclick = startAllProfile;
+$('#profileStopAll').onclick = stopAllProfile;
+
+// ---- wiring ------------------------------------------------------------ //
+$('#run').onclick=runQuery;
+$('#exportCsv').onclick=exportCsv;
+$('#copyTsv').onclick=copyTsv;
+$('#histBtn').onclick=()=>{ $('#history').classList.toggle('show'); renderHistory(); };
+$('#histClose').onclick=()=> $('#history').classList.remove('show');
+$('#histClear').onclick=()=>{ localStorage.removeItem(HKEY); renderHistory(); };
+$('#editor').addEventListener('input',e=>{ const c=active(); if(c) c.sql=e.target.value; });
+$('#editor').addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){ e.preventDefault(); runQuery(); }
+  if(e.key==='Tab'){ e.preventDefault(); const t=e.target,s=t.selectionStart,en=t.selectionEnd;
+    t.value=t.value.slice(0,s)+'  '+t.value.slice(en); t.selectionStart=t.selectionEnd=s+2;
+    const c=active(); if(c) c.sql=t.value; }
+});
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='c'){ const c=active();
+    if(c&&c.result){ const v=c.result.views[c.result.activeSet], s=c.result.sets[c.result.activeSet];
+      if(v&&v.sel&&!window.getSelection().toString()){ const val=s.rows[v.sel.r][v.sel.c];
+        navigator.clipboard.writeText(val===null?'':String(val)); } } }
+});
+
+// ---- connection dashboard (top bar) ------------------------------------ //
+const HJSON = {'Content-Type':'application/json'};
+let CONN = {connected:false};
+
+function setConnStatus(state, text){
+  $('#connDot').className = 'dot' + (state ? ' '+state : '');
+  $('#connStatus').textContent = text;
+}
+function connMsg(t, cls){
+  const m = $('#connMsg'); m.textContent = t || '';
+  m.style.color = cls==='err' ? 'var(--err)' : cls==='ok' ? 'var(--ok)' : 'var(--warn)';
+}
+async function post(path, body){
+  return api(path, {method:'POST', headers:HJSON, body: body?JSON.stringify(body):undefined});
+}
+
+// Poll a background job until it finishes; stream new lines to onLine.
+// maxMs guards against a job that never returns (so the UI can't hang forever).
+async function pollJob(jobId, onLine, maxMs){
+  maxMs = maxMs || 300000;
+  const t0 = Date.now(); let seen = 0;
+  for(;;){
+    const j = await api('/api/conn/job/'+jobId);
+    if(!j.ok) throw new Error('job not found');
+    if(onLine) for(; seen<j.lines.length; seen++) onLine(j.lines[seen]);
+    if(j.status==='done') return j;
+    if(j.status==='error') throw new Error(j.error || 'failed');
+    if(Date.now()-t0 > maxMs) throw new Error('timed out after '+Math.round(maxMs/1000)+'s');
+    await new Promise(r=>setTimeout(r, 600));
+  }
+}
+
+async function connLoadProfiles(){
+  const d = await api('/api/conn/profiles');
+  const sel = $('#connProfile'); sel.innerHTML = '<option value="">— select —</option>';
+  (d.profiles||[]).forEach(p=>{ const o=document.createElement('option');
+    o.value=p.name; o.textContent=p.name; sel.appendChild(o); });
+  if(d.default_region && !$('#connRegion').value) $('#connRegion').value = d.default_region;
+  if(d.message) connMsg(d.message, 'warn');
+}
+
+function fillClusters(list){
+  const sel = $('#connCluster');
+  sel.innerHTML = '<option value="">— select cluster —</option>';
+  (list||[]).forEach(c=>{ const o=document.createElement('option');
+    o.value=c; o.textContent=c; sel.appendChild(o); });
+  sel.disabled = !(list && list.length);
+}
+function ensureClusterOption(name){
+  const sel = $('#connCluster');
+  if(name && ![...sel.options].some(o=>o.value===name)){
+    const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o); }
+}
+
+async function connRefreshState(){
+  const s = await api('/api/conn/state'); if(!s.ok) return s;
+  CONN = s;
+  if(s.profile) $('#connProfile').value = s.profile;
+  if(s.region)  $('#connRegion').value  = s.region;
+  if(s.cluster){ ensureClusterOption(s.cluster); $('#connCluster').value = s.cluster; }
+  if(s.connected) setConnStatus('on', `connected · ${s.context}  ·  ${s.db_count} db / ${s.app_count} app`);
+  else setConnStatus('', 'not connected');
+  return s;
+}
+
+async function refreshWorkingArea(){ await loadServices(); await loadAppServices(); }
+
+// Fast path: when a profile+region is chosen, check for EXISTING valid creds
+// (terminal login, or a still-live session) and fill the cluster dropdown with
+// NO login/MFA. Only fall back to Login when creds are actually missing/expired.
+async function connDetect(){
+  const profile = $('#connProfile').value, region = $('#connRegion').value.trim();
+  if(!profile){ fillClusters([]); setConnStatus('', 'not connected'); return; }
+  if(!region){ connMsg('region is required', 'err'); return; }
+  try{
+    setConnStatus('busy', 'checking credentials…');
+    connMsg('checking existing AWS credentials…', 'warn');
+    const d = await post('/api/conn/detect', {profile, region});
+    if(d.authed){
+      fillClusters(d.clusters || []);
+      await connRefreshState();
+      setConnStatus('on', `authenticated · ${(d.clusters||[]).length} clusters`);
+      connMsg('using existing credentials — pick a cluster', 'ok');
+    }else if(d.needs_login){
+      fillClusters([]);
+      setConnStatus('', 'not logged in');
+      connMsg('no valid credentials for this profile — click Login', 'warn');
+    }else{
+      setConnStatus('bad', 'error');
+      connMsg('cluster check failed: ' + (d.error || 'unknown'), 'err');
+    }
+  }catch(e){ setConnStatus('bad', 'error'); connMsg('detect failed: ' + e.message, 'err'); }
+}
+
+async function connLoginFlow(){
+  const profile = $('#connProfile').value, region = $('#connRegion').value.trim();
+  if(!profile){ connMsg('pick a profile first', 'err'); return; }
+  if(!region){ connMsg('region is required', 'err'); return; }   // R3: no empty region
+  $('#connLogin').disabled = true;
+  try{
+    setConnStatus('busy', 'logging in…');
+    await post('/api/conn/select', {profile, region});
+    connMsg('approve the Okta push on your phone…', 'warn');
+    const lj = await post('/api/conn/run/login');
+    await pollJob(lj.job_id, l=>connMsg(l, 'warn'));
+    setConnStatus('busy', 'listing clusters…');
+    const cj = await post('/api/conn/run/clusters');
+    const cres = await pollJob(cj.job_id, l=>connMsg(l, 'warn'));
+    fillClusters((cres.result && cres.result.clusters) || []);
+    await connRefreshState();
+    setConnStatus('on', 'logged in — pick a cluster');
+    connMsg('logged in — select a cluster', 'ok');
+  }catch(e){
+    setConnStatus('bad', 'login failed');
+    connMsg('login failed: ' + e.message + '  — fix and click Login to retry', 'err');
+  }finally{ $('#connLogin').disabled = false; }
+}
+
+async function connSelectCluster(){
+  const cluster = $('#connCluster').value; if(!cluster) return;
+  try{
+    setConnStatus('busy', 'switching cluster…');
+    connMsg('tearing down old forwards · updating kubeconfig…', 'warn');
+    await post('/api/conn/select', {cluster});
+    const kj = await post('/api/conn/run/kubeconfig');
+    await pollJob(kj.job_id, l=>connMsg(l, 'warn'));
+    await connRefreshState();
+    await connActivate(true);             // load saved copy, or discover on first visit
+  }catch(e){
+    setConnStatus('bad', 'switch failed');
+    connMsg('cluster switch failed: ' + e.message, 'err');
+  }
+}
+
+// Activate the current cluster: load its saved copy instantly if present.
+// discover=true (cluster switch / first visit) runs discovery when there's no
+// saved copy; discover=false (boot) just loads-or-prompts, never auto-scans.
+async function connActivate(discover){
+  try{
+    setConnStatus('busy', 'loading services…');
+    const r = await post('/api/conn/load', {discover: !!discover});
+    if(r.job_id){ connMsg('discovering services…', 'warn'); await pollJob(r.job_id, l=>connMsg(l, 'warn')); }
+    await refreshWorkingArea();
+    const s = await connRefreshState();
+    if(r.needs_discovery){
+      connMsg('no saved data for this cluster — click ↻ Reload to discover', 'warn');
+    }else{
+      const how = r.source === 'saved' ? 'loaded saved' : 'discovered & saved';
+      connMsg(`${how} · ${s.db_count} db / ${s.app_count} app`, 'ok');
+    }
+  }catch(e){
+    setConnStatus('bad', 'load failed');
+    connMsg('load failed: ' + e.message, 'err');
+  }
+}
+
+// Reload = force re-discovery of the current cluster, overwriting its saved copy.
+async function connReload(){
+  $('#btnReload').disabled = true;
+  try{
+    setConnStatus('busy', 'rediscovering…');
+    const r = await post('/api/conn/reload');
+    if(!r.ok){ connMsg(r.error || 'reload failed', 'err'); return; }
+    connMsg('rediscovering services…', 'warn');
+    await pollJob(r.job_id, l=>connMsg(l, 'warn'));
+    await refreshWorkingArea();
+    const s = await connRefreshState();
+    connMsg(`reloaded & saved · ${s.db_count} db / ${s.app_count} app`, 'ok');
+  }catch(e){
+    setConnStatus('bad', 'reload failed');
+    connMsg('reload failed: ' + e.message, 'err');
+  }finally{ $('#btnReload').disabled = false; }
+}
+
+async function connLogout(){
+  if(!confirm('Log out?\n\nThis disconnects all databases and app port-forwards and ends the AWS session (removes local credentials). Saved cluster data is kept.')) return;
+  $('#btnLogout').disabled = true;
+  try{
+    setConnStatus('busy', 'logging out…');
+    const r = await post('/api/conn/logout');
+    $('#connProfile').value = ''; $('#connRegion').value = '';
+    fillClusters([]); connected = {}; appStatus = {};
+    await refreshWorkingArea();          // working area empties -> sidebar hides
+    await connRefreshState();
+    setConnStatus('', 'logged out');
+    connMsg((r.removed_profile && r.removed_profile.length)
+      ? `logged out · cleared creds for ${r.removed_profile.join(', ')}`
+      : 'logged out · forwards torn down', 'ok');
+  }catch(e){ setConnStatus('bad', 'logout failed'); connMsg('logout failed: ' + e.message, 'err'); }
+  finally{ $('#btnLogout').disabled = false; }
+}
+
+function connInit(){
+  $('#connLogin').onclick = connLoginFlow;
+  $('#btnLogout').onclick = connLogout;
+  // Picking a profile (or changing region) auto-detects existing creds and
+  // fills the cluster dropdown — no login unless creds are missing/expired.
+  $('#connProfile').onchange = connDetect;
+  $('#connRegion').onchange = connDetect;
+  $('#connCluster').onchange = connSelectCluster;
+  $('#btnReload').onclick = connReload;
+}
+
+async function connAutodetect(){
+  // Already authenticated (terminal login / live session)? Resolve the profile
+  // and fill the cluster dropdown at boot so it's immediately usable.
+  try{
+    setConnStatus('busy', 'checking credentials…');
+    const d = await api('/api/conn/autodetect');
+    if(d && d.authed){
+      if(d.profile) $('#connProfile').value = d.profile;
+      if(d.region) $('#connRegion').value = d.region;
+      fillClusters(d.clusters || []);
+      const s = await connRefreshState();
+      if(s.cluster){
+        ensureClusterOption(s.cluster); $('#connCluster').value = s.cluster;
+        await connActivate(false);     // load this cluster's saved copy (no auto-discovery)
+      }else{
+        connMsg('using existing credentials — pick a cluster', 'ok');
+        setConnStatus('on', `authenticated · ${(d.clusters||[]).length} clusters`);
+      }
+    }else{
+      await connRefreshState();
+    }
+  }catch(e){ await connRefreshState(); }
+}
+
+// ---- theme toggle (light / Material dark) ------------------------------ //
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  try{ localStorage.setItem('pgTheme', t); }catch(e){}
+  const b = $('#themeToggle');
+  if(b) b.textContent = t==='dark' ? '☀ Light' : '🌙 Dark';
+}
+function themeInit(){
+  setTheme(document.documentElement.dataset.theme || 'light');   // sync button label
+  $('#themeToggle').onclick = ()=>
+    setTheme(document.documentElement.dataset.theme==='dark' ? 'light' : 'dark');
+}
+
+(async function init(){
+  themeInit();
+  await loadServices(); await loadAppServices(); await loadProfiles(); applyActive();
+  connInit(); await connLoadProfiles();
+  await connAutodetect();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# ─── Secrets & machine-discovered artifacts — NEVER COMMIT ───────────────────
+# These hold REAL database/service credentials resolved from your cluster.
+pg-artifacts/
+**/pg-services*.json
+**/postgres-credentials.md
+**/.pg-console-modes.json
+**/.pg-console-profiles.json
+**/.pg-console-conn.json
+**/.pg-console-*.json
+
+# Personal config (ship pg-console.config.example.json instead)
+pg-console.config.json
+pg-console.yaml
+pg-console.yml
+
+# ─── Internal design docs (excluded from the public repo) ────────────────────
+pg-console-user-guide.md
+requirement-draft/
+
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# ─── Editor / tooling / local ────────────────────────────────────────────────
+.claude/
+.kiro/
+.idea/
+.vscode/
+*.log
+.DS_Store

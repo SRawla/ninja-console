@@ -1,0 +1,8 @@
+# Required
+psycopg[binary]>=3.1
+
+# Optional — install only for the engines you actually use:
+#   Cassandra / Scylla (CQL):   pip install cassandra-driver
+#     (on Python 3.12+ it uses the built-in asyncio reactor automatically)
+#   MongoDB:                     pip install pymongo
+#   Elasticsearch / OpenSearch: no dependency (standard-library HTTP)

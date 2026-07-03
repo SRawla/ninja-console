@@ -1,0 +1,14 @@
+{
+  "_comment": "Copy this to 'pg-console.json' (auto-loaded from the working dir or next to pg_console.py), or pass any file with --config PATH. All keys are optional; CLI flags override the file, which overrides built-in defaults. A YAML file (pg-console.yaml) works too if PyYAML is installed.",
+
+  "region": "ca-central-1",
+  "okta_config": "~/.okta_aws_login_config",
+  "gimme": "gimme-aws-creds",
+  "aws": "aws",
+  "kubectl": "kubectl",
+
+  "host": "127.0.0.1",
+  "port": 8765,
+  "no_forward": false,
+  "services": null
+}

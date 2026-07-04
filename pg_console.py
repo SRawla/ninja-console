@@ -40,12 +40,14 @@ import pg_pipeline
 import pg_cql
 import pg_es
 import pg_mongo
+import pg_redis
+import pg_kafka
 
 # Multi-engine registry: non-Postgres data sources dispatch to a per-engine
 # module implementing the common interface (connect/run/tables/columns/classify/
 # version/close). Postgres keeps its inline psycopg path. Drivers are imported
 # lazily inside each module, so they're optional.
-ENGINES = {'cql': pg_cql, 'es': pg_es, 'mongo': pg_mongo}
+ENGINES = {'cql': pg_cql, 'es': pg_es, 'mongo': pg_mongo, 'redis': pg_redis, 'kafka': pg_kafka}
 _engine_cache = {}               # service -> {'info': info, 'handle': handle}
 
 

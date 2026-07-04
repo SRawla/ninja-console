@@ -5,4 +5,6 @@ psycopg[binary]>=3.1
 #   Cassandra / Scylla (CQL):   pip install cassandra-driver
 #     (on Python 3.12+ it uses the built-in asyncio reactor automatically)
 #   MongoDB:                     pip install pymongo
+#   Redis:                       pip install redis
+#   Kafka (read-only browser):   pip install kafka-python
 #   Elasticsearch / OpenSearch: no dependency (standard-library HTTP)

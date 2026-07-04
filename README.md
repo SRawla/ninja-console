@@ -27,6 +27,12 @@ build step, one command.
   | Cassandra / Scylla (CQL) | CQL | grid |
   | Elasticsearch / OpenSearch | ES SQL (`SELECT …`) or JSON DSL | grid / documents |
   | MongoDB | JSON find/aggregate spec | documents |
+  | Redis | commands (`GET`, `SCAN`, `HGETALL`, …) | grid |
+  | Kafka (read-only) | topic name → recent messages | documents |
+
+  Kafka is a message browser (consume recent messages), not a query engine, and
+  needs the broker to advertise a locally-reachable host — over a port-forward
+  many clusters advertise internal addresses, which Kafka can't reach.
 - **Write-safety modes** — per-source **read-only / confirm / unrestricted**,
   enforced server-side.
 - **Light & dark themes** (Material-style dark), schema tree, query history,
@@ -45,7 +51,7 @@ build step, one command.
 ```bash
 pip install "psycopg[binary]"
 # optional engines:
-pip install cassandra-driver pymongo
+pip install cassandra-driver pymongo redis kafka-python
 
 python pg_console.py            # opens http://127.0.0.1:8765
 ```
@@ -80,6 +86,8 @@ pg_forward.py    kubectl port-forward lifecycle
 pg_cql.py        Cassandra/Scylla engine   (lazy: cassandra-driver)
 pg_es.py         Elasticsearch engine      (stdlib HTTP)
 pg_mongo.py      MongoDB engine            (lazy: pymongo)
+pg_redis.py      Redis engine              (lazy: redis)
+pg_kafka.py      Kafka message browser     (lazy: kafka-python)
 ```
 
 Non-Postgres engines are **optional and lazily imported** — if a driver isn't

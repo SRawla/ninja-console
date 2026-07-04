@@ -202,6 +202,7 @@
        border:1px solid var(--accent-dim);color:var(--accent);border-radius:var(--r-sm);
        padding:1px 5px;margin-left:6px;vertical-align:middle}
   .engbadge.es{color:#c26a1a;border-color:#c26a1a} .engbadge.mongo{color:#3f9142;border-color:#3f9142}
+  .engbadge.redis{color:#c0392b;border-color:#c0392b} .engbadge.kafka{color:#6b4fbb;border-color:#6b4fbb}
   .modebadge{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.4px;
        border-radius:3px;padding:2px 6px;cursor:pointer;user-select:none;flex:0 0 auto;
        white-space:nowrap;line-height:1.4}
@@ -480,7 +481,7 @@ function displayName(name){
 function engBadge(s){
   const e = (s.engine || 'postgres');
   if(e === 'postgres') return '';
-  const lbl = {cql:'CQL', es:'ES', mongo:'MONGO'}[e] || e.toUpperCase();
+  const lbl = {cql:'CQL', es:'ES', mongo:'MONGO', redis:'REDIS', kafka:'KAFKA'}[e] || e.toUpperCase();
   return ` <span class="engbadge ${e}">${lbl}</span>`;
 }
 function renderSources(){
@@ -606,6 +607,8 @@ function runSelect(name,schema,table){
   const eng=(svcInfo(name).engine)||'postgres';
   if(eng==='es')       c.sql=`SELECT * FROM "${table}" LIMIT 100`;                 // ES SQL: no schema qualifier
   else if(eng==='mongo') c.sql=JSON.stringify({db:schema, find:table, limit:50}, null, 2);
+  else if(eng==='redis') c.sql=`SCAN 0 MATCH ${table} COUNT 100`;                  // table is a "prefix:*" pattern
+  else if(eng==='kafka') c.sql=table;                                              // table is the topic name
   else                 c.sql=`SELECT * FROM "${schema}"."${table}" LIMIT 100;`;    // postgres / cql
   applyActive(); runQuery();
 }

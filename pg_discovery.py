@@ -44,6 +44,8 @@ _ENGINE_SPECS = [
     ('cql',   9042,  r'cassandra|scylla|cql',             'cassandra', 'cassandra', False),
     ('es',    9200,  r'elasticsearch|elastic|opensearch', '',          '',          False),
     ('mongo', 27017, r'mongo',                             'root',      '',          True),
+    ('redis', 6379,  r'redis',                             '',          '',          True),
+    ('kafka', 9092,  r'kafka',                             '',          '',          False),
 ]
 
 
@@ -76,6 +78,10 @@ def _resolve_engine_creds(engine, plain_env, decoded, du, dp):
         pw = (_pick(decoded, 'cql-password', 'cassandra-password')
               or _pick(plain_env, 'CQL_PASSWORD', 'CASSANDRA_PASSWORD') or dp or 'cassandra')
         return user, pw, ''
+    if engine == 'redis':           # redis auth is password-only (unless ACL users)
+        pw = (_pick(decoded, 'redis-password', 'redis-pass', 'REDIS_PASSWORD')
+              or _pick(plain_env, 'REDIS_PASSWORD') or dp)
+        return '', pw, ''
     return du, dp, ''
 
 

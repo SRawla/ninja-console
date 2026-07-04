@@ -653,6 +653,17 @@ def job_snapshot(job_id):
                 'result': j['result'], 'error': j['error']}
 
 
+def _apply_aws_profile():
+    """Mirror the active cred profile into AWS_PROFILE so every kubectl/aws
+    subprocess (port-forward, get-token, discovery) authenticates as it — the
+    process is otherwise launched without AWS_PROFILE, and ~/.aws/credentials
+    usually has no [default], so kubectl's exec-auth would fail with 'the server
+    has asked for the client to provide credentials'."""
+    ap = PIPE.context.get('aws_profile') if PIPE else None
+    if ap:
+        os.environ['AWS_PROFILE'] = ap
+
+
 def select_conn(profile=None, region=None, cluster=None):
     """Set gate inputs and validate them via the pipeline's gate steps. Each
     selection invalidates everything downstream (reset_from), so re-picking a
@@ -662,6 +673,7 @@ def select_conn(profile=None, region=None, cluster=None):
             PIPE.reset_from('pick_profile')
             PIPE.context['profile'] = profile
             PIPE.run_step('pick_profile')
+            _apply_aws_profile()
         if region is not None:
             PIPE.reset_from('pick_region')
             PIPE.context['region'] = region

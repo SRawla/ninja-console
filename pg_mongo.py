@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pg_mongo.py — MongoDB engine for pg-console's multi-engine console.
+pg_mongo.py — MongoDB engine for Ninja Console's multi-engine console.
 
 MongoDB has no query-string language, so the editor takes a small JSON spec:
 

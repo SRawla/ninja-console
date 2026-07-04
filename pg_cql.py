@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pg_cql.py — Cassandra / Scylla (CQL) engine for pg-console's multi-engine console.
+pg_cql.py — Cassandra / Scylla (CQL) engine for Ninja Console's multi-engine console.
 
 Implements the common engine interface the console dispatches to for non-Postgres
 data sources:

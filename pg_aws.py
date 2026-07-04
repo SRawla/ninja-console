@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pg_aws.py — AWS/Okta bootstrap for the pg-console setup screen.
+pg_aws.py — AWS/Okta bootstrap for Ninja Console's setup screen.
 
 Chain: pick okta profile -> gimme-aws-creds (Okta MFA push) -> list EKS
 clusters -> update kubeconfig. Everything shells out to the CLIs the user

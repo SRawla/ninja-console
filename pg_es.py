@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pg_es.py — Elasticsearch / OpenSearch engine for pg-console's multi-engine console.
+pg_es.py — Elasticsearch / OpenSearch engine for Ninja Console's multi-engine console.
 
 Talks to the (forwarded) HTTP endpoint using only the standard library — NO extra
 dependency. Two query modes, auto-detected from the editor text:

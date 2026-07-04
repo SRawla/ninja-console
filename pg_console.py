@@ -902,6 +902,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header('Content-Type', ctype + '; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
+        # Never let the browser cache the UI or API responses — otherwise an
+        # edited pg_ui.html (e.g. a rebrand) keeps showing the stale cached page.
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
         self.end_headers()
         self.wfile.write(body)
 

@@ -90,8 +90,9 @@
 
   /* Connection dashboard top bar (spec §5): always-visible profile/cluster/
      status + actions, switchable any time. */
-  #connbar{display:flex;align-items:center;gap:10px;padding:9px 16px;min-height:50px;flex:none;
-       flex-wrap:wrap;row-gap:8px;border-bottom:1px solid var(--line);background:var(--panel)}
+  #connbar{display:flex;flex-direction:column;gap:8px;padding:9px 16px;flex:none;
+       border-bottom:1px solid var(--line);background:var(--panel)}
+  #connbar .connrow{display:flex;align-items:center;gap:10px;min-width:0}
   #connbar button{flex:0 0 auto}
   .statuspill{max-width:340px}
   .statuspill .cstatus{overflow:hidden;text-overflow:ellipsis}
@@ -145,19 +146,23 @@
        overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .appsvc .sub{color:var(--muted);font-size:10.5px;font-family:var(--mono);overflow:hidden;
        text-overflow:ellipsis;white-space:nowrap}
+  /* Port controls are three fixed-size items — remote port, local port, action —
+     so a long port name (e.g. "http-management:8080") never stretches the row. */
   .appsvc .portctl{display:flex;align-items:center;gap:6px;margin-top:1px}
-  .appsvc .portctl .rport{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--panel3);
-       border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 8px;white-space:nowrap;
-       overflow:hidden;text-overflow:ellipsis;max-width:132px}
-  .appsvc select.portsel{font-family:var(--mono);font-size:11px;background:var(--panel3);height:26px;
-       border:1px solid var(--line);border-radius:var(--r-sm);color:var(--txt);padding:0 4px;max-width:132px}
+  .appsvc .portctl .rport{flex:0 0 118px;width:118px;box-sizing:border-box;font-family:var(--mono);
+       font-size:11px;color:var(--muted);background:var(--panel3);height:26px;line-height:24px;
+       border:1px solid var(--line);border-radius:var(--r-sm);padding:0 8px;white-space:nowrap;
+       overflow:hidden;text-overflow:ellipsis}
+  .appsvc select.portsel{flex:0 0 118px;width:118px;box-sizing:border-box;font-family:var(--mono);
+       font-size:11px;background:var(--panel3);height:26px;border:1px solid var(--line);
+       border-radius:var(--r-sm);color:var(--txt);padding:0 4px}
   .appsvc .arrow{flex:0 0 auto;color:var(--faint);font-size:12px}
-  .appsvc input.localport{flex:0 0 auto;width:66px;height:26px;font-family:var(--mono);font-size:11px;
-       background:var(--panel3);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--txt);
-       padding:0 6px;text-align:center}
+  .appsvc input.localport{flex:0 0 64px;width:64px;box-sizing:border-box;height:26px;font-family:var(--mono);
+       font-size:11px;background:var(--panel3);border:1px solid var(--line);border-radius:var(--r-sm);
+       color:var(--txt);padding:0 6px;text-align:center}
   .appsvc input.localport:focus{border-color:var(--accent-dim);box-shadow:0 0 0 3px var(--glow);outline:none}
   .appsvc input.localport.badport{border-color:var(--err)}
-  .appsvc .act{flex:0 0 auto;height:26px;font-size:11px;padding:0 12px;border-radius:var(--r-sm);margin-left:auto}
+  .appsvc .act{flex:0 0 auto;height:26px;font-size:11px;padding:0 14px;border-radius:var(--r-sm)}
   .appsvc .errline{color:var(--err);font-size:10.5px;font-family:var(--mono);padding:0 12px 8px 33px;
        white-space:normal;line-height:1.35}
   .appsvc .fwdtag{color:var(--accent);font-size:9px;font-family:var(--mono);margin-left:6px;
@@ -341,19 +346,23 @@
 </header>
 
 <div id="connbar">
-  <div class="grp"><label>profile</label>
-    <select id="connProfile"><option value="">— select —</option></select></div>
-  <div class="grp"><label>region</label>
-    <input class="box" id="connRegion" spellcheck="false" placeholder="region"></div>
-  <button id="connLogin">Login</button>
-  <span class="sep"></span>
-  <div class="grp"><label>cluster</label>
-    <select id="connCluster" disabled><option value="">—</option></select></div>
-  <span class="statuspill"><span class="dot" id="connDot"></span><span class="cstatus" id="connStatus">not connected</span></span>
-  <div class="spacer"></div>
-  <span id="connMsg"></span>
-  <button id="btnReload" title="Re-discover this cluster and overwrite its saved copy">↻ Reload</button>
-  <button id="btnLogout" class="danger" title="Disconnect all forwards and end the AWS session">Logout</button>
+  <div class="connrow">
+    <div class="grp"><label>profile</label>
+      <select id="connProfile"><option value="">— select —</option></select></div>
+    <div class="grp"><label>region</label>
+      <input class="box" id="connRegion" spellcheck="false" placeholder="region"></div>
+    <button id="connLogin">Login</button>
+    <div class="spacer"></div>
+    <button id="btnLogout" class="danger" title="Disconnect all forwards and end the AWS session">Logout</button>
+  </div>
+  <div class="connrow">
+    <div class="grp"><label>cluster</label>
+      <select id="connCluster" disabled><option value="">—</option></select></div>
+    <span class="statuspill"><span class="dot" id="connDot"></span><span class="cstatus" id="connStatus">not connected</span></span>
+    <span id="connMsg"></span>
+    <div class="spacer"></div>
+    <button id="btnReload" title="Re-discover this cluster and overwrite its saved copy">↻ Reload</button>
+  </div>
 </div>
 
 <main>
@@ -919,7 +928,11 @@ function renderAppCatalog(){
 function buildServiceCard(s, presetLocalPort){
   const st = appStatus[s.service] || {};
   const ports = s.ports || [{name:'?', port: st.remotePort || 0}];
-  if(remotePortChoice[s.service] === undefined) remotePortChoice[s.service] = ports[0].port;
+  if(remotePortChoice[s.service] === undefined){
+    // Default to the http port when one exists — that's what we usually forward.
+    const httpP = ports.find(p => /http/i.test(p.name)) || ports[0];
+    remotePortChoice[s.service] = httpP.port;
+  }
   if(presetLocalPort !== undefined) localPortChoice[s.service] = presetLocalPort;
   else if(localPortChoice[s.service] === undefined) localPortChoice[s.service] = remotePortChoice[s.service];
 

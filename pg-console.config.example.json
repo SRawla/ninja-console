@@ -10,5 +10,10 @@
   "host": "127.0.0.1",
   "port": 8765,
   "no_forward": false,
+
+  "_artifacts": "Directory where discovered per-cluster artifacts (pg-services.<cluster>.json) are stored AND loaded. Created if missing. One file per cluster; the last-opened cluster is remembered so a bare 'python pg_console.py' reopens it.",
+  "artifacts_dir": "pg-artifacts",
+
+  "_services": "Optional: force-load one specific artifact file. Usually leave null and let per-cluster files + last-cluster restore handle it.",
   "services": null
 }

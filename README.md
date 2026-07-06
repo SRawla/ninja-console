@@ -63,6 +63,18 @@ query. `Ctrl+C` tears everything down.
 It also boots fine with **no AWS creds and no artifact** — you land in a
 not-connected dashboard and connect from the browser.
 
+### Persistence — just run `python pg_console.py`
+
+Discovery is cached **per cluster**: each cluster keeps one file,
+`<artifacts_dir>/pg-services.<cluster>.json`, and Reload/Save overwrites it in
+place (no duplicates). The last-opened cluster is remembered, so:
+
+- **First run** → not-connected → Login → pick a cluster → **↻ Reload** →
+  discovers and saves that cluster's file.
+- **Every later run** → `python pg_console.py` (no flags) → **reopens that
+  cluster's saved databases/apps automatically.** Switching clusters loads each
+  one's file instantly.
+
 ## Configuration
 
 Everything has sensible defaults; override via CLI flags or an optional config
@@ -71,8 +83,22 @@ file (`pg-console.json`, or `pg-console.yaml` if PyYAML is installed). Precedenc
 
 ```bash
 python pg_console.py --region us-east-1 --okta-config ~/.okta_aws_login_config \
-                     --port 8765 --host 127.0.0.1
+                     --artifacts-dir pg-artifacts --port 8765 --host 127.0.0.1
 ```
+
+Common keys:
+
+| Key / flag | Meaning |
+|---|---|
+| `region` / `--region` | Default AWS region for the dashboard |
+| `okta_config` / `--okta-config` | Path to your okta login config |
+| `artifacts_dir` / `--artifacts-dir` | Where per-cluster artifacts are **stored & loaded** (auto-created; default `pg-artifacts`) |
+| `services` / `--services` | Force-load one specific artifact file (usually leave unset) |
+| `gimme` / `aws` / `kubectl` | Executable names/paths for the CLIs |
+| `port` / `host` / `no_forward` | Server bind + whether to auto port-forward |
+
+Artifacts contain resolved credentials — keep `artifacts_dir` out of any
+shared/synced/committed location (`pg-artifacts/` is git-ignored by default).
 
 ## How it works
 

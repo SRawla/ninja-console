@@ -826,6 +826,30 @@ def _cluster_artifact_path(cluster):
     return os.path.abspath(os.path.join(DEFAULT_ARTIFACT_DIR, f'pg-services.{safe}.json'))
 
 
+def _last_cluster_path():
+    return os.path.join(DEFAULT_ARTIFACT_DIR, '.pg-console-last.json')
+
+
+def _remember_cluster(cluster):
+    """Record the last-opened cluster so a bare `python pg_console.py` reopens
+    its saved per-cluster artifact next launch (no --services flag needed)."""
+    if not cluster:
+        return
+    try:
+        with open(_last_cluster_path(), 'w', encoding='utf-8') as f:
+            json.dump({'cluster': cluster}, f)
+    except Exception:
+        pass
+
+
+def _read_last_cluster():
+    try:
+        with open(_last_cluster_path(), encoding='utf-8') as f:
+            return json.load(f).get('cluster')
+    except Exception:
+        return None
+
+
 def load_conn(discover=False):
     """Activate the current cluster's services. If that cluster already has a
     saved copy, load it instantly (no discovery). Otherwise: start a discovery
@@ -877,6 +901,7 @@ def save_conn():
         json.dump(data, f, indent=2)
     SERVICES_PATH = os.path.abspath(path)
     IN_MEMORY_SERVICES = None                # now durable; read from the file
+    _remember_cluster(cluster)               # so a bare relaunch reopens this cluster
     db = [s for s in svcs if s.get('kind', 'db') == 'db']
     app = [s for s in svcs if s.get('kind') == 'app']
     return {'ok': True, 'cluster': cluster, 'path': SERVICES_PATH,
@@ -1066,9 +1091,9 @@ INDEX_HTML = _load_index_html()
 def find_services_file(explicit):
     if explicit:
         return explicit
-    for c in (os.path.join('pg-artifacts', 'pg-services.json'),
+    for c in (os.path.join(DEFAULT_ARTIFACT_DIR, 'pg-services.json'),
               'pg-services.json',
-              os.path.join('pg-artifacts', 'postgres-credentials.md'),
+              os.path.join(DEFAULT_ARTIFACT_DIR, 'postgres-credentials.md'),
               'postgres-credentials.md'):
         if os.path.exists(c):
             return c
@@ -1110,7 +1135,7 @@ def load_app_config(explicit):
 
 
 def main():
-    global SERVICES_PATH, KUBECTL, AUTO_FORWARD, fm, PIPE, DEFAULT_REGION
+    global SERVICES_PATH, KUBECTL, AUTO_FORWARD, fm, PIPE, DEFAULT_REGION, DEFAULT_ARTIFACT_DIR
     ap = argparse.ArgumentParser(description='Local Postgres SQL console + AWS/cluster dashboard.')
     ap.add_argument('--services', help='path to pg-services.json OR postgres-credentials.md')
     ap.add_argument('--config', help='path to a config file (JSON, or YAML if PyYAML installed)')
@@ -1122,6 +1147,8 @@ def main():
     ap.add_argument('--gimme', default=None, help='gimme-aws-creds executable to use')
     ap.add_argument('--aws', default=None, help='aws executable to use')
     ap.add_argument('--kubectl', default=None, help='kubectl executable to use')
+    ap.add_argument('--artifacts-dir', default=None,
+                    help='directory where discovered per-cluster artifacts are stored/loaded (default pg-artifacts)')
     ap.add_argument('--no-forward', action='store_true',
                     help='do not auto-start kubectl port-forward (assume forwards are already running)')
     ap.add_argument('--no-browser', action='store_true')
@@ -1140,6 +1167,13 @@ def main():
     pg_aws.OKTA_CONFIG = os.path.expanduser(pick(args.okta_config, 'okta_config', pg_aws.OKTA_CONFIG))
     pg_aws.GIMME_EXE = pick(args.gimme, 'gimme', pg_aws.GIMME_EXE)
     pg_aws.AWS_EXE = pick(args.aws, 'aws', pg_aws.AWS_EXE)
+    # Where per-cluster artifacts live (stored + loaded). Configurable so you can
+    # relocate them; created if missing so discovery always has somewhere to save.
+    DEFAULT_ARTIFACT_DIR = os.path.expanduser(pick(args.artifacts_dir, 'artifacts_dir', DEFAULT_ARTIFACT_DIR))
+    try:
+        os.makedirs(DEFAULT_ARTIFACT_DIR, exist_ok=True)
+    except Exception as e:
+        print(f'note: could not create artifacts dir {DEFAULT_ARTIFACT_DIR}: {e}')
 
     # R1: boot even with no artifact and no creds. A missing artifact is a
     # normal not-connected state — the dashboard lets the user connect from the
@@ -1147,6 +1181,13 @@ def main():
     path = find_services_file(args.services or cfg.get('services'))
     if args.services and not (path and os.path.exists(path)):
         print(f'note: --services {args.services} not found; starting not-connected.')
+    # Nothing explicit to load? Reopen the last cluster's saved artifact so a bare
+    # `python pg_console.py` lands where you left off (one file per cluster).
+    if not (path and os.path.exists(path)):
+        last = _read_last_cluster()
+        if last and os.path.exists(_cluster_artifact_path(last)):
+            path = _cluster_artifact_path(last)
+            print(f'restoring last cluster ->  {last}')
     if path and os.path.exists(path):
         SERVICES_PATH = os.path.abspath(path)
     load_modes()

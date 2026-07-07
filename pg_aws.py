@@ -95,8 +95,14 @@ def aws_login(profile, gimme=None, on_line=None):
     Note: gimme-aws-creds writes creds to ~/.aws/credentials on success."""
     gimme = gimme or GIMME_EXE
     args = [gimme, '--profile', profile]
+    # Login BOOTSTRAPS credentials: gimme writes the (role-derived) profile into
+    # ~/.aws/credentials. It must NOT inherit AWS_PROFILE — the console sets that
+    # to the very profile gimme is about to create, so botocore inside gimme would
+    # raise ProfileNotFound before it can write it. Strip it for this subprocess.
+    env = {k: v for k, v in os.environ.items()
+           if k not in ('AWS_PROFILE', 'AWS_DEFAULT_PROFILE')}
     try:
-        rc, out = _run(args, timeout=180, on_line=on_line)
+        rc, out = _run(args, timeout=180, on_line=on_line, env=env)
     except FileNotFoundError:
         return False, f"'{gimme}' not found on PATH"
     return rc == 0, out

@@ -9,6 +9,20 @@ build step, one command.
 > One entrypoint • runs from source • single required dependency (`psycopg`) •
 > everything binds `127.0.0.1` only • it never stores or displays your secrets.
 
+## Screenshots
+
+Multi-engine discovery — Postgres, Cassandra (CQL), Elasticsearch, MongoDB, Redis
+and Kafka data sources in one cluster, each connectable and browsable:
+
+![Data Sources — multi-engine discovery](docs/screenshot-data-sources.png)
+
+Query console — SQL/CQL editor with a sortable, filterable results grid:
+
+![Query console — results grid](docs/screenshot-query-console.png)
+
+> _Screenshots use a sanitized demo cluster; real profile, cluster and service
+> names are never shown._
+
 ## Features
 
 - **Connection dashboard** — a persistent top bar shows the active AWS profile,

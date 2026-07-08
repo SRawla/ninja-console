@@ -133,12 +133,12 @@ class ForwardManager:
         while time.time() < deadline:
             if proc.poll() is not None:
                 self._forwards.pop(name, None)
-                raise RuntimeError('port-forward exited: ' + (''.join(err_lines).strip()[:300] or 'unknown error'))
+                raise RuntimeError('port-forward exited: ' + (''.join(err_lines).strip() or 'unknown error'))
             if port_open('127.0.0.1', lp):
                 return True
             time.sleep(0.3)
 
-        detail = ''.join(err_lines).strip()[:300]
+        detail = ''.join(err_lines).strip()
         self.stop_forward(name)
         raise RuntimeError(f'port-forward to {svc} (:{lp}) not ready after {self.FORWARD_TIMEOUT}s'
                            + (f' — kubectl said: {detail}' if detail else ' (kubectl printed nothing)'))
@@ -175,14 +175,14 @@ class ForwardManager:
         while time.time() < deadline:
             if proc.poll() is not None:
                 self._app_forwards.pop(service, None)
-                detail = ''.join(err_lines).strip()[:300]
+                detail = ''.join(err_lines).strip()
                 return {'ok': False, 'error': 'port-forward exited: ' + (detail or 'unknown error')}
             if port_open('127.0.0.1', local_port):
                 self._app_active_port[service] = local_port
                 return {'ok': True, 'port': local_port}
             time.sleep(0.3)
 
-        detail = ''.join(err_lines).strip()[:300]
+        detail = ''.join(err_lines).strip()
         self.stop_app_forward(service)
         return {'ok': False, 'error': f'not ready after {self.FORWARD_TIMEOUT}s'
                                       + (f' — kubectl said: {detail}' if detail else '')}

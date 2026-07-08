@@ -53,7 +53,7 @@ def _req(handle, method, path, body=None):
             msg = j.get('error', {}).get('reason') or j.get('error') or detail
         except Exception:
             msg = detail
-        raise RuntimeError(f'ES {e.code}: {str(msg)[:300]}')
+        raise RuntimeError(f'ES {e.code}: {str(msg)}')
     except urllib.error.URLError as e:
         raise RuntimeError(f'ES unreachable: {e.reason}')
     return json.loads(raw) if raw.strip() else {}

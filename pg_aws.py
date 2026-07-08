@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 
 # Overridable settings (pg_console.main() may reassign these from CLI/config).
 # Functions below read the module globals at call time, so reassigning
@@ -77,14 +78,29 @@ def _run(args, timeout=180, on_line=None, env=None):
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             stdin=subprocess.DEVNULL, text=True, bufsize=1, env=env)
     lines = []
+    # A hung child (e.g. the AWS CLI stalling on a credentials file being rewritten
+    # underneath it) keeps stdout open, so the read loop below blocks indefinitely
+    # and a plain proc.wait(timeout=...) is never reached. A watchdog kills the
+    # process after `timeout`s no matter what — that closes stdout, unblocks the
+    # loop, and lets the caller see a clean timeout instead of wedging the request.
+    timed_out = threading.Event()
+    def _kill():
+        timed_out.set()
+        try:
+            proc.kill()
+        except Exception:
+            pass
+    watchdog = threading.Timer(timeout, _kill)
+    watchdog.start()
     try:
         for line in proc.stdout:
             lines.append(line)
             if on_line:
                 on_line(line.rstrip('\n'))
-        proc.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        proc.kill()
+        proc.wait()
+    finally:
+        watchdog.cancel()
+    if timed_out.is_set():
         return 124, ''.join(lines) + '\n[timed out]'
     return proc.returncode, ''.join(lines)
 

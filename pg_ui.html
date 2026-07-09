@@ -314,6 +314,7 @@
   table.grid tr:nth-child(even) td{background:var(--zebra)}
   table.grid tr:hover td{background:var(--sel)}
   table.grid td.null{color:var(--faint);font-style:italic}
+  table.grid td.jsoncell{color:var(--accent);font-family:var(--mono)}   /* JSON / JSONB values */
   table.grid td.cellsel{outline:2px solid var(--accent);outline-offset:-2px;background:var(--sel)!important}
 
   .history{position:absolute;right:0;top:0;bottom:0;width:430px;background:var(--panel);
@@ -453,6 +454,10 @@ let connecting={}, srcErrors={}, MODES={}, DEFAULT_MODE='confirm', pendingConfir
 
 async function api(path, opts){ const r = await fetch(path, opts); return r.json(); }
 function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+// A DB cell may be a parsed JSON / JSONB value (object or array) — psycopg hands
+// those back as real objects, so String(v) would render "[object Object]". Show
+// them as JSON text instead. Scalars pass straight through.
+function cellStr(v){ return (v!==null && typeof v==='object') ? JSON.stringify(v) : String(v); }
 const active = () => consoles.find(c=>c.id===activeId);
 const svcInfo = n => SERVICES.find(s=>s.service===n) || {};
 
@@ -776,13 +781,13 @@ function appendFilter(bar){
 function viewRows(set, view){
   let idx = set.rows.map((r,i)=>i);
   if(view.filter){ const f=view.filter.toLowerCase();
-    idx = idx.filter(i=> set.rows[i].some(v=> v!==null && String(v).toLowerCase().includes(f))); }
+    idx = idx.filter(i=> set.rows[i].some(v=> v!==null && cellStr(v).toLowerCase().includes(f))); }
   if(view.sort){ const {col,dir}=view.sort;
     idx.sort((a,b)=>{ let x=set.rows[a][col], y=set.rows[b][col];
       if(x===null&&y===null) return 0; if(x===null) return 1; if(y===null) return -1;
       const nx=Number(x), ny=Number(y);
       if(!isNaN(nx)&&!isNaN(ny)) return (nx-ny)*dir;
-      return String(x).localeCompare(String(y))*dir; }); }
+      return cellStr(x).localeCompare(cellStr(y))*dir; }); }
   return idx;
 }
 function buildGrid(set, view){
@@ -797,7 +802,10 @@ function buildGrid(set, view){
     h+=`<tr><td class="rownum">${n+1}</td>`;
     set.rows[ri].forEach((v,ci)=>{
       if(v===null) h+='<td class="null" data-r="'+ri+'" data-c="'+ci+'">NULL</td>';
-      else { const s=escapeHtml(String(v)); h+=`<td data-r="${ri}" data-c="${ci}" title="${s}">${s}</td>`; }
+      else { const obj=(typeof v==='object');
+             const disp=obj?JSON.stringify(v):String(v);           // compact in the cell
+             const full=obj?JSON.stringify(v,null,2):String(v);    // pretty on hover
+             h+=`<td class="${obj?'jsoncell':''}" data-r="${ri}" data-c="${ci}" title="${escapeHtml(full)}">${escapeHtml(disp)}</td>`; }
     });
     h+='</tr>';
   });
@@ -825,13 +833,13 @@ function asMatrix(){ const cur=currentSet(); if(!cur) return null;
   return {cols:cur.set.columns, rows:idx.map(i=>cur.set.rows[i])}; }
 function exportCsv(){
   const m=asMatrix(); if(!m){ setStatus('<span class="warn">nothing to export</span>'); return; }
-  const esc=v=> v===null?'':(/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':String(v));
+  const esc=v=>{ if(v===null) return ''; const t=cellStr(v); return /[",\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t; };
   const lines=[m.cols.map(esc).join(',')]; m.rows.forEach(r=>lines.push(r.map(esc).join(',')));
   download(lines.join('\n'),'text/csv','csv');
 }
 function copyTsv(){
   const m=asMatrix(); if(!m){ setStatus('<span class="warn">nothing to copy</span>'); return; }
-  const esc=v=> v===null?'':String(v).replace(/\t/g,' ').replace(/\n/g,' ');
+  const esc=v=> v===null?'':cellStr(v).replace(/\t/g,' ').replace(/\n/g,' ');
   const txt=[m.cols.join('\t')].concat(m.rows.map(r=>r.map(esc).join('\t'))).join('\n');
   navigator.clipboard.writeText(txt).then(()=>setStatus('<span class="ok">copied TSV</span>'));
 }
@@ -1095,7 +1103,7 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='c'){ const c=active();
     if(c&&c.result){ const v=c.result.views[c.result.activeSet], s=c.result.sets[c.result.activeSet];
       if(v&&v.sel&&!window.getSelection().toString()){ const val=s.rows[v.sel.r][v.sel.c];
-        navigator.clipboard.writeText(val===null?'':String(val)); } } }
+        navigator.clipboard.writeText(val===null?'':cellStr(val)); } } }
 });
 
 // ---- connection dashboard (top bar) ------------------------------------ //

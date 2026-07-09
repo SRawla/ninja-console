@@ -381,6 +381,8 @@
     </div>
 
     <div id="panelDb" class="panel">
+      <div class="head"><span id="dbCount">data sources</span> <span class="spacer"></span>
+        <input class="box filterbox" id="dbFilter" placeholder="filter…"></div>
       <div class="list" id="sources"><div class="empty">loading…</div></div>
     </div>
 
@@ -500,14 +502,22 @@ function engBadge(s){
   const lbl = {cql:'CQL', es:'ES', mongo:'MONGO', redis:'REDIS', kafka:'KAFKA'}[e] || e.toUpperCase();
   return ` <span class="engbadge ${e}">${lbl}</span>`;
 }
+let dbFilterText = '';
 function renderSources(){
   const box = $('#sources'); box.innerHTML='';
-  if(!SERVICES.length){ box.innerHTML='<div class="empty">no services in artifact</div>'; return; }
+  if(!SERVICES.length){ $('#dbCount').textContent='data sources'; box.innerHTML='<div class="empty">no services in artifact</div>'; return; }
+  // Filter by name (display + raw), namespace, database, or engine.
+  const f = dbFilterText.trim().toLowerCase();
+  const match = s => !f || displayName(s.service).toLowerCase().includes(f)
+      || String(s.service).toLowerCase().includes(f) || (s.namespace||'').toLowerCase().includes(f)
+      || (s.database||'').toLowerCase().includes(f) || (s.engine||'postgres').toLowerCase().includes(f);
   // Connected sources float to the top; everything else keeps discovery order.
-  const order = SERVICES.map((s,i)=>[s,i]).sort((a,b)=>{
+  const order = SERVICES.map((s,i)=>[s,i]).filter(x=>match(x[0])).sort((a,b)=>{
     const ac = connected[a[0].service]?0:1, bc = connected[b[0].service]?0:1;
     return ac!==bc ? ac-bc : a[1]-b[1];
   }).map(x=>x[0]);
+  $('#dbCount').textContent = f ? `data sources · ${order.length} of ${SERVICES.length}` : `data sources · ${SERVICES.length}`;
+  if(!order.length){ box.innerHTML='<div class="empty">no matches</div>'; return; }
   order.forEach(s=>{
     const isC = !!connected[s.service];
     const busy = !!connecting[s.service];
@@ -1072,6 +1082,7 @@ async function stopAllProfile(){
 $('#segDb').onclick = ()=> switchPanel('db');
 $('#segApp').onclick = ()=> switchPanel('app');
 $('#appFilter').oninput = e=>{ appFilterText = e.target.value; renderAppCatalog(); };
+$('#dbFilter').oninput = e=>{ dbFilterText = e.target.value; renderSources(); };
 $('#profileSelect').onchange = e=>{ currentProfile = e.target.value || null; renderProfilePreview(); };
 $('#profileSave').onclick = saveSessionAsProfile;
 $('#profileDelete').onclick = async ()=>{
